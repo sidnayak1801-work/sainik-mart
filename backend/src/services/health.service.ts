@@ -13,7 +13,7 @@ export const getHealthStatus = async (): Promise<HealthStatus> => {
     await prisma.$queryRaw`SELECT 1`;
     db = "up";
   } catch {
-    db = "down";
+    // keep db as "down"
   }
 
   return {
