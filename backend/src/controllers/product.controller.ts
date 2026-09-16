@@ -8,14 +8,18 @@ import {
   updateProduct,
 } from "../services/product.service";
 import { paramId } from "../utils/params";
+import type { ProductListQuery } from "../validators/product.validators";
 
-export const list = async (_req: Request, res: Response): Promise<void> => {
-  const data = await listProducts();
-  res.status(200).json({ success: true, data });
+export const list = async (req: Request, res: Response): Promise<void> => {
+  const { items, pagination } = await listProducts(
+    req.query as unknown as ProductListQuery,
+    req.user?.role,
+  );
+  res.status(200).json({ success: true, data: items, pagination });
 };
 
 export const getById = async (req: Request, res: Response): Promise<void> => {
-  const data = await getProductById(paramId(req.params.id));
+  const data = await getProductById(paramId(req.params.id), req.user?.role);
   res.status(200).json({ success: true, data });
 };
 

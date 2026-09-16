@@ -21,17 +21,21 @@ npm install
 
 ## Environment
 
-Copy `.env.example` to `.env` and set:
+Copy `.env.example` to `.env`.
+
+For **Expo web** or the **iOS Simulator** on this Mac:
 
 ```
-EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:4000
+EXPO_PUBLIC_API_URL=http://127.0.0.1:4000
 ```
 
-The backend default port is **4000**.
+The backend default port is **4000**. Start it with `cd backend && npm run dev`.
 
-A physical iOS or Android device cannot use `localhost` to reach your Mac. `localhost` on the device is the device itself. Use your Mac’s LAN IP (for example `http://192.168.1.20:4000`) when testing on a real phone. The iOS Simulator can often use `http://127.0.0.1:4000`. The Android emulator typically uses `http://10.0.2.2:4000`.
+Restart Expo (`Ctrl+C`, then `npm start` / `npm run web`) after any `.env` change. Expo reads `EXPO_PUBLIC_*` at startup.
 
-Do not commit secrets. `.env` is gitignored.
+A physical iOS or Android device cannot use `localhost` to reach your Mac. `localhost` on the device is the device itself. Use your Mac’s LAN IP (for example `http://192.168.1.20:4000`) when testing on a real phone. The Android emulator typically uses `http://10.0.2.2:4000`.
+
+Do not commit secrets. `.env` is gitignored. Do not leave `YOUR_LAN_IP` in `.env`; that host does not exist.
 
 ## Start Expo
 
@@ -76,7 +80,20 @@ Successful login/register returns `{ success: true, data: { user, accessToken } 
 
 On launch, `AuthContext` reads the stored token and calls `/api/auth/me`. A token alone is not enough: invalid or expired tokens are removed and Login is shown. Logout deletes the JWT and returns to the auth stack.
 
-Home → **Check API** still calls `GET /api/health`.
+## Catalog (Days 12–13)
+
+Home, Categories, search results, and product details read the Day 11 APIs. There is no banner API; Home uses a static promo strip.
+
+| Screen | API |
+| --- | --- |
+| Home categories + popular products | `GET /api/categories`, `GET /api/products?page=1&limit=10` |
+| Search | `GET /api/products?search=` |
+| Category products | `GET /api/products?categoryId=` |
+| Product details | `GET /api/products/:id` |
+
+Empty catalog: seed demo groceries from the backend (`cd backend && npm run prisma:seed`). Cart is still a later day.
+
+If Home is empty, confirm `EXPO_PUBLIC_API_URL` points at the running API (port **4000**) and that categories/products exist.
 
 ## Folder structure
 

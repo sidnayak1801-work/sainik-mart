@@ -13,7 +13,8 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   MainTabs: undefined;
-  ProductDetails: { productId?: string };
+  ProductList: { categoryId?: string; title?: string; search?: string };
+  ProductDetails: { productId: string };
   OrderDetails: { orderId?: string };
 };
 

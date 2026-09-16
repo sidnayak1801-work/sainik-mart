@@ -50,7 +50,66 @@ DB ping: `GET http://localhost:4000/health`
 
 Register always creates a `CUSTOMER`. Login and register return `{ success: true, data: { user, accessToken } }`. `GET /me` returns `{ success: true, data: { user } }`. `passwordHash` is never returned.
 
-Authenticated requests send `Authorization: Bearer <accessToken>`. Middleware verifies the JWT, then loads the user from PostgreSQL so `CUSTOMER` / `ADMIN` comes from the live `users.role` (not a stale token). Missing/invalid tokens return **401**. Wrong role returns **403 Forbidden**. Catalog, cart, address, and order **handlers still return 501** after authorization succeeds.
+Authenticated requests send `Authorization: Bearer <accessToken>`. Middleware verifies the JWT, then loads the user from PostgreSQL so `CUSTOMER` / `ADMIN` comes from the live `users.role` (not a stale token). Missing/invalid tokens return **401**. Wrong role returns **403 Forbidden**.
+
+Public catalog GETs return **active** records only. Send an admin Bearer token to list or fetch inactive categories/products.
+
+## Catalog
+
+Customer and unauthenticated clients can **read** active catalog data. Only `ADMIN` can create, update, or deactivate.
+
+### Categories
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `GET` | `/api/categories` | Public (active only; admin token sees inactive too) |
+| `GET` | `/api/categories/:id` | Public (404 if inactive unless admin) |
+| `POST` | `/api/categories` | ADMIN `{ name, imageUrl?, isActive? }` |
+| `PATCH` | `/api/categories/:id` | ADMIN partial of the same fields |
+| `DELETE` | `/api/categories/:id` | ADMIN — sets `isActive: false` (does not hard-delete) |
+
+Duplicate `name` returns **409**. Missing id returns **404**.
+
+### Products
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `GET` | `/api/products` | Public (active only; admin token sees inactive too) |
+| `GET` | `/api/products/:id` | Public (404 if inactive unless admin) |
+| `POST` | `/api/products` | ADMIN |
+| `PATCH` | `/api/products/:id` | ADMIN |
+| `DELETE` | `/api/products/:id` | ADMIN — sets `isActive: false` |
+
+`GET /api/products` query parameters:
+
+| Param | Default | Notes |
+| --- | --- | --- |
+| `page` | `1` | integer ≥ 1 |
+| `limit` | `20` | integer 1–50 |
+| `search` | — | case-insensitive match on `name` or `description` |
+| `categoryId` | — | UUID; only products in that category |
+
+Examples:
+
+```text
+GET /api/products
+GET /api/products?page=1&limit=20
+GET /api/products?search=milk
+GET /api/products?categoryId=<uuid>
+GET /api/products?search=milk&categoryId=<uuid>&page=1&limit=10
+```
+
+List response:
+
+```json
+{
+  "success": true,
+  "data": [{ "id": "...", "name": "Fresh Bananas", "price": 60, "discountPrice": 50 }],
+  "pagination": { "page": 1, "limit": 20, "total": 125, "totalPages": 7 }
+}
+```
+
+Create product body: `{ name, description, price, discountPrice?, stockQuantity?, categoryId, imageUrl?, isActive? }`. `price` and `discountPrice` must be ≥ 0; `discountPrice` cannot exceed `price`; `categoryId` must exist.
 
 ## Authorization matrix
 
@@ -60,16 +119,7 @@ Authenticated requests send `Authorization: Bearer <accessToken>`. Middleware ve
 | Authenticated (`CUSTOMER` or `ADMIN`) | `GET /api/auth/me`; cart (`GET /api/cart`, `POST /api/cart/items`, `PATCH\|DELETE /api/cart/items/:id`); addresses (`GET\|POST /api/addresses`, `PATCH\|DELETE /api/addresses/:id`); customer orders (`POST\|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`) |
 | `ADMIN` only | `POST\|PATCH\|DELETE /api/categories`, `POST\|PATCH\|DELETE /api/products`, `PATCH /api/admin/orders/:id/status` |
 
-## Day 6 route skeleton
-
-Catalog, cart, address, and order **business logic** is not implemented yet. After a request is authorized, those handlers return `501`.
-
-- `GET|POST|PATCH|DELETE /api/categories`
-- `GET|POST|PATCH|DELETE /api/products`
-- `GET /api/cart`, `POST /api/cart/items`, `PATCH|DELETE /api/cart/items/:id`
-- `GET|POST /api/addresses`, `PATCH|DELETE /api/addresses/:id`
-- `POST|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`
-- `PATCH /api/admin/orders/:id/status` (ADMIN)
+Cart, address, and order **business logic** is not implemented yet (those handlers return 501 after authorization).
 
 ## Scripts
 
@@ -82,11 +132,12 @@ Catalog, cart, address, and order **business logic** is not implemented yet. Aft
 | `npm run lint:fix`              | Lint and auto-fix                            |
 | `npm run format`                | Format files with Prettier                   |
 | `npm run format:check`          | Check formatting without writing             |
+| `npm test`                      | Catalog API checks (`node:test`)             |
 | `npm run prisma:generate`       | Generate Prisma Client                       |
 | `npm run prisma:migrate`        | Create and apply migrations (`migrate dev`)  |
 | `npm run prisma:migrate:deploy` | Apply existing migrations (`migrate deploy`) |
 
 ## Notes
 
-- Catalog, cart, address, and order **business logic** is not implemented yet (routes return 501).
+- Cart, address, and order **business logic** is not implemented yet (routes return 501).
 - Never commit `.env` or real secrets.

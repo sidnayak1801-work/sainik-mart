@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { theme } from "@/theme";
@@ -8,14 +9,24 @@ type ProductCardProps = {
   onPress?: () => void;
 };
 
+const hasDiscount = (product: Product): boolean => {
+  return product.discountPrice !== null && product.discountPrice !== undefined;
+};
+
 export function ProductCard({ product, onPress }: ProductCardProps) {
   return (
     <Pressable onPress={onPress} style={styles.card}>
-      <View style={styles.image} />
+      {product.imageUrl ? (
+        <Image source={{ uri: product.imageUrl }} style={styles.image} contentFit="cover" />
+      ) : (
+        <View style={styles.image} />
+      )}
       <View style={styles.meta}>
-        <Text style={styles.name}>{product.name}</Text>
+        <Text style={styles.name} numberOfLines={2}>
+          {product.name}
+        </Text>
         <View style={styles.prices}>
-          {product.discountPrice !== undefined ? (
+          {hasDiscount(product) ? (
             <>
               <Text style={styles.price}>₹{product.discountPrice}</Text>
               <Text style={styles.original}>₹{product.price}</Text>
@@ -36,10 +47,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     overflow: "hidden",
+    flex: 1,
   },
   image: {
     height: 120,
     backgroundColor: theme.colors.muted,
+    width: "100%",
   },
   meta: {
     padding: theme.spacing.md,

@@ -5,7 +5,7 @@ import { AppError } from "../utils/AppError";
 import { verifyAccessToken } from "../utils/jwt";
 import { prisma } from "../utils/prisma";
 
-export const authenticate = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+export const loadAuthenticatedUser = async (req: Request): Promise<void> => {
   const header = req.headers.authorization;
 
   if (!header?.startsWith("Bearer ")) {
@@ -35,5 +35,9 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
   }
 
   req.user = { id: user.id, role: user.role };
+};
+
+export const authenticate = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+  await loadAuthenticatedUser(req);
   next();
 });

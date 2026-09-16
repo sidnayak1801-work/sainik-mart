@@ -9,13 +9,13 @@ import {
 } from "../services/category.service";
 import { paramId } from "../utils/params";
 
-export const list = async (_req: Request, res: Response): Promise<void> => {
-  const data = await listCategories();
+export const list = async (req: Request, res: Response): Promise<void> => {
+  const data = await listCategories(req.user?.role);
   res.status(200).json({ success: true, data });
 };
 
 export const getById = async (req: Request, res: Response): Promise<void> => {
-  const data = await getCategoryById(paramId(req.params.id));
+  const data = await getCategoryById(paramId(req.params.id), req.user?.role);
   res.status(200).json({ success: true, data });
 };
 

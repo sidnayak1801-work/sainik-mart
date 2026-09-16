@@ -49,8 +49,11 @@ const userMessageForStatus = (status: number, data: unknown): string => {
 };
 
 const request = async <T>(method: HttpMethod, path: string, body?: unknown): Promise<T> => {
-  if (!API_URL) {
-    throw new ApiError("API URL is not configured.", 0);
+  if (!API_URL || API_URL.includes("YOUR_LAN_IP")) {
+    throw new ApiError(
+      "API URL is not configured. Set EXPO_PUBLIC_API_URL in my-app/.env (use http://127.0.0.1:4000 for Expo web on this Mac) and restart Expo.",
+      0,
+    );
   }
 
   const url = `${API_URL.replace(/\/$/, "")}${path}`;
@@ -72,7 +75,10 @@ const request = async <T>(method: HttpMethod, path: string, body?: unknown): Pro
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError("Unable to connect to the server. Please check your internet connection.", 0);
+    throw new ApiError(
+      "Unable to reach the API. Confirm the backend is running and EXPO_PUBLIC_API_URL is correct, then restart Expo.",
+      0,
+    );
   }
 
   const data: unknown = await response.json().catch(() => undefined);

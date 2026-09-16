@@ -7,6 +7,7 @@ import { HomeScreen } from "@/screens/home/HomeScreen";
 import { OrderDetailsScreen } from "@/screens/orders/OrderDetailsScreen";
 import { OrdersScreen } from "@/screens/orders/OrdersScreen";
 import { ProductDetailsScreen } from "@/screens/product/ProductDetailsScreen";
+import { ProductListScreen } from "@/screens/product/ProductListScreen";
 import { ProfileScreen } from "@/screens/profile/ProfileScreen";
 import { theme } from "@/theme";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
@@ -36,7 +37,12 @@ export function MainNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      <Stack.Screen
+        name="ProductList"
+        component={ProductListScreen}
+        options={({ route }) => ({ title: route.params.title ?? "Products" })}
+      />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: "Product" }} />
       <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
     </Stack.Navigator>
   );
