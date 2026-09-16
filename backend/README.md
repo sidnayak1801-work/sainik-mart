@@ -37,7 +37,8 @@ npm run prisma:migrate
 npm run dev
 ```
 
-Health check: `GET http://localhost:4000/health`
+Health: `GET http://localhost:4000/api/health`  
+DB ping: `GET http://localhost:4000/health`
 
 ## Auth
 
@@ -48,6 +49,27 @@ Health check: `GET http://localhost:4000/health`
 | `GET`  | `/api/auth/me`       | Bearer access token | —                                         |
 
 Register always creates a `CUSTOMER`. Login and register return `{ success: true, data: { user, accessToken } }`. `GET /me` returns `{ success: true, data: { user } }`. `passwordHash` is never returned.
+
+Authenticated requests send `Authorization: Bearer <accessToken>`. Middleware verifies the JWT, then loads the user from PostgreSQL so `CUSTOMER` / `ADMIN` comes from the live `users.role` (not a stale token). Missing/invalid tokens return **401**. Wrong role returns **403 Forbidden**. Catalog, cart, address, and order **handlers still return 501** after authorization succeeds.
+
+## Authorization matrix
+
+| Access | Routes |
+| --- | --- |
+| Public (no token) | `POST /api/auth/register`, `POST /api/auth/login`, `GET /health`, `GET /api/health`, `GET /api/categories`, `GET /api/categories/:id`, `GET /api/products`, `GET /api/products/:id` |
+| Authenticated (`CUSTOMER` or `ADMIN`) | `GET /api/auth/me`; cart (`GET /api/cart`, `POST /api/cart/items`, `PATCH\|DELETE /api/cart/items/:id`); addresses (`GET\|POST /api/addresses`, `PATCH\|DELETE /api/addresses/:id`); customer orders (`POST\|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`) |
+| `ADMIN` only | `POST\|PATCH\|DELETE /api/categories`, `POST\|PATCH\|DELETE /api/products`, `PATCH /api/admin/orders/:id/status` |
+
+## Day 6 route skeleton
+
+Catalog, cart, address, and order **business logic** is not implemented yet. After a request is authorized, those handlers return `501`.
+
+- `GET|POST|PATCH|DELETE /api/categories`
+- `GET|POST|PATCH|DELETE /api/products`
+- `GET /api/cart`, `POST /api/cart/items`, `PATCH|DELETE /api/cart/items/:id`
+- `GET|POST /api/addresses`, `PATCH|DELETE /api/addresses/:id`
+- `POST|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`
+- `PATCH /api/admin/orders/:id/status` (ADMIN)
 
 ## Scripts
 
@@ -66,5 +88,5 @@ Register always creates a `CUSTOMER`. Login and register return `{ success: true
 
 ## Notes
 
-- Catalog, orders, and payments are not included yet.
+- Catalog, cart, address, and order **business logic** is not implemented yet (routes return 501).
 - Never commit `.env` or real secrets.

@@ -1,56 +1,103 @@
-# Welcome to your Expo app 👋
+# Sainik Mart — Customer app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Cross-platform grocery delivery customer app for iOS and Android.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- React Native
+- Expo SDK 57
+- TypeScript
+- React Navigation
+- Express backend via `EXPO_PUBLIC_API_URL`
 
-   ```bash
-   npm install
-   ```
+This folder is the mobile app only. It does not contain a second backend.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Install
 
 ```bash
-npm run reset-project
+cd my-app
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Environment
 
-### Other setup steps
+Copy `.env.example` to `.env` and set:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:4000
+```
 
-## Learn more
+The backend default port is **4000**.
 
-To learn more about developing your project with Expo, look at the following resources:
+A physical iOS or Android device cannot use `localhost` to reach your Mac. `localhost` on the device is the device itself. Use your Mac’s LAN IP (for example `http://192.168.1.20:4000`) when testing on a real phone. The iOS Simulator can often use `http://127.0.0.1:4000`. The Android emulator typically uses `http://10.0.2.2:4000`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Do not commit secrets. `.env` is gitignored.
 
-## Join the community
+## Start Expo
 
-Join our community of developers creating universal apps.
+```bash
+npx expo start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+or `npm start`.
+
+## iOS
+
+Requires macOS and Xcode.
+
+```bash
+npm run ios          # from repo root
+cd my-app && npm run ios
+```
+
+or `npx expo start --ios` from `my-app/`.
+
+You can also open the project in Expo Go on a physical iPhone.
+
+## Android
+
+Use an Android emulator or a physical Android device. This does not depend on Xcode.
+
+```bash
+npx expo start --android
+```
+
+## Authentication
+
+Customer login and register talk to the Day 8 Express APIs through `src/api/auth.ts` and `src/api/client.ts`.
+
+| Action | Endpoint |
+| --- | --- |
+| Register | `POST /api/auth/register` `{ name, email, phone, password }` |
+| Login | `POST /api/auth/login` `{ identifier, password }` |
+| Session restore | `GET /api/auth/me` with `Authorization: Bearer <accessToken>` |
+
+Successful login/register returns `{ success: true, data: { user, accessToken } }`. The JWT is stored with **Expo SecureStore** (`src/storage/authStorage.ts`). Passwords are never stored.
+
+On launch, `AuthContext` reads the stored token and calls `/api/auth/me`. A token alone is not enough: invalid or expired tokens are removed and Login is shown. Logout deletes the JWT and returns to the auth stack.
+
+Home → **Check API** still calls `GET /api/health`.
+
+## Folder structure
+
+```
+my-app/
+├── App.tsx
+├── src/
+│   ├── api/
+│   ├── components/
+│   ├── context/
+│   ├── navigation/
+│   ├── screens/
+│   ├── storage/
+│   ├── theme/
+│   ├── types/
+│   └── utils/
+└── assets/
+```
+
+## Cross-platform notes
+
+- Prefer Expo APIs and React Native core components.
+- Development can happen on macOS while the same codebase targets Android and iOS.
+- iOS Simulator needs Xcode on macOS. Android does not.

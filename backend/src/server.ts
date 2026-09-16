@@ -1,15 +1,16 @@
 import { createApp } from "./app";
+import { prisma } from "./config/database";
 import { env } from "./config/env";
-import { prisma } from "./utils/prisma";
+import { logger } from "./utils/logger";
 
 const app = createApp();
 
 const server = app.listen(env.PORT, () => {
-  console.log(`Sainik-mart API listening on http://localhost:${env.PORT}`);
+  logger.info(`Sainik-mart API listening on http://localhost:${env.PORT}`);
 });
 
 const shutdown = async (signal: string) => {
-  console.log(`${signal} received. Shutting down...`);
+  logger.info(`${signal} received. Shutting down...`);
   server.close(async () => {
     try {
       await prisma.$disconnect();
