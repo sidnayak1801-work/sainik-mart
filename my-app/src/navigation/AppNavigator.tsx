@@ -1,6 +1,6 @@
-import { StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
-import { Loading } from "@/components/Loading";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
 
@@ -13,7 +13,8 @@ export function AppNavigator() {
   if (isLoading) {
     return (
       <View style={styles.splash}>
-        <Loading />
+        <BrandLogo size="lg" />
+        <ActivityIndicator color={theme.colors.gold} />
       </View>
     );
   }
@@ -25,6 +26,8 @@ const styles = StyleSheet.create({
   splash: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
+    alignItems: "center",
+    backgroundColor: theme.colors.primaryDark,
+    gap: theme.spacing.lg,
   },
 });

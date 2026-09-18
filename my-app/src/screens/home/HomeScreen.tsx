@@ -7,6 +7,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { listCategories } from "@/api/categories";
 import { ApiError } from "@/api/client";
 import { listProducts } from "@/api/products";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
@@ -17,7 +18,7 @@ import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
 import type { Category, Product } from "@/types/models";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
-import { APP_NAME } from "@/utils/constants";
+import { APP_NAME, APP_TAGLINE } from "@/utils/constants";
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, "Home">,
@@ -64,19 +65,24 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void onRefresh()}>
-      <Text style={styles.brand}>{APP_NAME}</Text>
-      <Text style={styles.title}>Home</Text>
-      <Input
-        label="Search"
-        placeholder="Search milk, fruit, bread..."
-        value={search}
-        onChangeText={setSearch}
-      />
-      <Button title="Search products" onPress={onSearch} />
-
-      <View style={styles.promo}>
-        <Text style={styles.promoTitle}>Groceries in minutes</Text>
-        <Text style={styles.promoBody}>Fresh staples delivered to your door. Browse categories or search below.</Text>
+      <View style={styles.hero}>
+        <View style={styles.heroLogo}>
+          <BrandLogo size="md" />
+        </View>
+        <Text style={styles.heroEyebrow}>{APP_TAGLINE}</Text>
+        <Text style={styles.heroTitle}>Welcome to {APP_NAME}</Text>
+        <Text style={styles.heroBody}>Groceries in minutes. Search or browse categories below.</Text>
+        <View style={styles.searchPill}>
+          <Input
+            label="Search"
+            placeholder='Search "samosa"'
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+            onSubmitEditing={onSearch}
+          />
+        </View>
+        <Button title="Search products" onPress={onSearch} variant="accent" />
       </View>
 
       {loading ? <Loading /> : null}
@@ -121,30 +127,38 @@ export function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  brand: {
-    fontSize: theme.typography.caption,
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-  title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  promo: {
-    backgroundColor: theme.colors.primary,
+  hero: {
+    backgroundColor: theme.colors.primaryDark,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
     gap: theme.spacing.sm,
   },
-  promoTitle: {
-    color: theme.colors.primaryText,
-    fontSize: theme.typography.heading,
-    fontWeight: "700",
+  heroLogo: {
+    alignItems: "center",
+    marginBottom: theme.spacing.xs,
   },
-  promoBody: {
+  heroEyebrow: {
+    color: theme.colors.gold,
+    fontSize: theme.typography.caption,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  heroTitle: {
+    color: theme.colors.primaryText,
+    fontSize: theme.typography.title,
+    fontWeight: "800",
+  },
+  heroBody: {
     color: theme.colors.primaryText,
     fontSize: theme.typography.body,
+  },
+  searchPill: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.button,
+    paddingHorizontal: theme.spacing.sm,
+    paddingTop: theme.spacing.sm,
+    overflow: "hidden",
   },
   section: {
     fontSize: theme.typography.heading,

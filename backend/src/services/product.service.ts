@@ -14,13 +14,17 @@ const toMoney = (value: Prisma.Decimal | null): number | null => {
 };
 
 type ProductWithCategory = Product & {
-  category: { id: string; name: string };
+  category: { id: string; name: string; isActive: boolean };
 };
 
 const serializeProduct = (product: ProductWithCategory) => ({
   ...product,
   price: toMoney(product.price) ?? 0,
   discountPrice: toMoney(product.discountPrice),
+  category: {
+    id: product.category.id,
+    name: product.category.name,
+  },
 });
 
 const assertDiscountFitsPrice = (price: number, discountPrice: number | null): void => {
@@ -42,14 +46,14 @@ const requireCategory = async (categoryId: string) => {
 
 const productInclude = {
   category: {
-    select: { id: true, name: true },
+    select: { id: true, name: true, isActive: true },
   },
 } as const;
 
 export const listProducts = async (query: ProductListQuery, role?: Role) => {
   const { page, limit, search, categoryId } = query;
   const where: Prisma.ProductWhereInput = {
-    ...(canSeeInactive(role) ? {} : { isActive: true }),
+    ...(canSeeInactive(role) ? {} : { isActive: true, category: { isActive: true } }),
     ...(categoryId ? { categoryId } : {}),
     ...(search
       ? {
@@ -91,7 +95,10 @@ export const getProductById = async (id: string, role?: Role) => {
     include: productInclude,
   });
 
-  if (!product || (!product.isActive && !canSeeInactive(role))) {
+  if (
+    !product ||
+    (!canSeeInactive(role) && (!product.isActive || !product.category.isActive))
+  ) {
     throw new AppError("Product not found", 404);
   }
 

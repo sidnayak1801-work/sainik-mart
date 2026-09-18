@@ -1,15 +1,21 @@
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
+import { APP_TAGLINE } from "@/utils/constants";
 
 export function ProfileScreen() {
   const { user, logout } = useAuth();
 
   return (
     <Screen>
+      <View style={styles.brand}>
+        <BrandLogo size="sm" />
+        <Text style={styles.tagline}>{APP_TAGLINE}</Text>
+      </View>
       <Text style={styles.title}>Profile</Text>
       {user ? (
         <>
@@ -26,6 +32,18 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  brand: {
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+  },
+  tagline: {
+    color: theme.colors.gold,
+    fontSize: theme.typography.caption,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
   title: {
     fontSize: theme.typography.title,
     fontWeight: "700",

@@ -8,3 +8,6 @@ export const addCartItemSchema = z.object({
 export const updateCartItemSchema = z.object({
   quantity: z.number().int().positive(),
 });
+
+export type AddCartItemInput = z.infer<typeof addCartItemSchema>;
+export type UpdateCartItemInput = z.infer<typeof updateCartItemSchema>;

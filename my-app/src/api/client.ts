@@ -1,6 +1,14 @@
 import { getToken } from "@/storage/authStorage";
 import { API_URL } from "@/utils/constants";
 
+type UnauthorizedHandler = () => void;
+
+let onUnauthorized: UnauthorizedHandler | null = null;
+
+export const setOnUnauthorized = (handler: UnauthorizedHandler | null): void => {
+  onUnauthorized = handler;
+};
+
 export class ApiError extends Error {
   readonly status: number;
   readonly data?: unknown;
@@ -48,16 +56,20 @@ const userMessageForStatus = (status: number, data: unknown): string => {
   return "Unable to complete the request.";
 };
 
+const isPublicAuthPath = (path: string): boolean => {
+  return path.startsWith("/api/auth/register") || path.startsWith("/api/auth/login");
+};
+
 const request = async <T>(method: HttpMethod, path: string, body?: unknown): Promise<T> => {
   if (!API_URL || API_URL.includes("YOUR_LAN_IP")) {
     throw new ApiError(
-      "API URL is not configured. Set EXPO_PUBLIC_API_URL in my-app/.env (use http://127.0.0.1:4000 for Expo web on this Mac) and restart Expo.",
+      "API URL is not configured. Set EXPO_PUBLIC_API_URL in my-app/.env and restart Expo. Start the API with npm run api from the repo root.",
       0,
     );
   }
 
   const url = `${API_URL.replace(/\/$/, "")}${path}`;
-  const token = await getToken();
+  const token = isPublicAuthPath(path) ? null : await getToken();
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -76,7 +88,7 @@ const request = async <T>(method: HttpMethod, path: string, body?: unknown): Pro
     });
   } catch {
     throw new ApiError(
-      "Unable to reach the API. Confirm the backend is running and EXPO_PUBLIC_API_URL is correct, then restart Expo.",
+      "Unable to reach the API. Start it with npm run api from the repo root, then retry.",
       0,
     );
   }
@@ -84,6 +96,9 @@ const request = async <T>(method: HttpMethod, path: string, body?: unknown): Pro
   const data: unknown = await response.json().catch(() => undefined);
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      onUnauthorized?.();
+    }
     throw new ApiError(userMessageForStatus(response.status, data), response.status, data);
   }
 

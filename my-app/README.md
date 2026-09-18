@@ -23,19 +23,19 @@ npm install
 
 Copy `.env.example` to `.env`.
 
-For **Expo web** or the **iOS Simulator** on this Mac:
+For **Expo web** on this Mac:
 
 ```
 EXPO_PUBLIC_API_URL=http://127.0.0.1:4000
 ```
 
-The backend default port is **4000**. Start it with `cd backend && npm run dev`.
+On **iOS Simulator / a physical phone**, the app uses the Expo LAN host (the same machine as Metro) on port **4000** when the env URL is localhost/`127.0.0.1`. Start the API from the repo root:
 
-Restart Expo (`Ctrl+C`, then `npm start` / `npm run web`) after any `.env` change. Expo reads `EXPO_PUBLIC_*` at startup.
+```bash
+npm run api
+```
 
-A physical iOS or Android device cannot use `localhost` to reach your Mac. `localhost` on the device is the device itself. Use your Mac’s LAN IP (for example `http://192.168.1.20:4000`) when testing on a real phone. The Android emulator typically uses `http://10.0.2.2:4000`.
-
-Do not commit secrets. `.env` is gitignored. Do not leave `YOUR_LAN_IP` in `.env`; that host does not exist.
+The backend default port is **4000**. Restart Expo after any `.env` change. Do not leave `YOUR_LAN_IP` in `.env`.
 
 ## Start Expo
 

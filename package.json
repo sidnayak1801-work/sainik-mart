@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "npm start --prefix my-app",
+    "api": "npm run dev --prefix backend",
     "ios": "npm run ios --prefix my-app",
     "android": "npm run android --prefix my-app",
     "web": "npm run web --prefix my-app"

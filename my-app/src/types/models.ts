@@ -28,10 +28,26 @@ export type Pagination = {
   totalPages: number;
 };
 
-export type CartItem = {
+export type CartProduct = {
   id: string;
-  productId: string;
+  name: string;
+  price: number;
+  discountPrice: number | null;
+  imageUrl: string | null;
+  stockQuantity: number;
+};
+
+export type CartLineItem = {
+  id: string;
   quantity: number;
+  lineTotal: number;
+  product: CartProduct;
+};
+
+export type Cart = {
+  id: string;
+  items: CartLineItem[];
+  subtotal: number;
 };
 
 export type Order = {

@@ -278,6 +278,60 @@ test("search, filter, and pagination", async () => {
   assert.equal(combined.status, 200);
 });
 
+test("invalid bearer on public catalog is treated as anonymous", async () => {
+  const categories = await request("/api/categories", {
+    headers: { Authorization: "Bearer not-a-token" },
+  });
+  assert.equal(categories.status, 200);
+  assert.equal(categories.body.success, true);
+  assert.ok(Array.isArray(categories.body.data));
+
+  const products = await request("/api/products", {
+    headers: { Authorization: "Bearer not-a-token" },
+  });
+  assert.equal(products.status, 200);
+  assert.equal(products.body.success, true);
+
+  const emptyBearer = await request("/api/products", {
+    headers: { Authorization: "Bearer " },
+  });
+  assert.equal(emptyBearer.status, 200);
+});
+
+test("public catalog hides products in inactive categories", async () => {
+  const hiddenCategory = await authJson(adminToken, "POST", "/api/categories", {
+    name: `Day11 ${stamp} Hidden Cat`,
+  });
+  assert.equal(hiddenCategory.status, 201);
+  const hiddenCategoryId = (hiddenCategory.body.data as { id: string }).id;
+
+  const hiddenProduct = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Hidden Milk`,
+    description: "Should be hidden when category is inactive",
+    price: 30,
+    categoryId: hiddenCategoryId,
+  });
+  assert.equal(hiddenProduct.status, 201);
+  const hiddenProductId = (hiddenProduct.body.data as { id: string }).id;
+
+  const deactivated = await authJson(adminToken, "DELETE", `/api/categories/${hiddenCategoryId}`);
+  assert.equal(deactivated.status, 200);
+
+  const publicList = await request("/api/products?search=Hidden%20Milk");
+  assert.equal(publicList.status, 200);
+  const publicItems = publicList.body.data as Array<{ id: string }>;
+  assert.equal(
+    publicItems.some((item) => item.id === hiddenProductId),
+    false,
+  );
+
+  const publicDetail = await request(`/api/products/${hiddenProductId}`);
+  assert.equal(publicDetail.status, 404);
+
+  const adminDetail = await authJson(adminToken, "GET", `/api/products/${hiddenProductId}`);
+  assert.equal(adminDetail.status, 200);
+});
+
 test("invalid product id and public hides inactive products", async () => {
   const invalid = await request("/api/products/not-a-uuid");
   assert.equal(invalid.status, 400);

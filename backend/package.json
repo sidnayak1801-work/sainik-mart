@@ -17,7 +17,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "test": "tsx --test src/catalog.test.ts"
+    "test": "tsx --test --test-concurrency=1 src/catalog.test.ts src/auth.test.ts src/cart.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

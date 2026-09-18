@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { getMe, login as loginRequest, register as registerRequest } from "@/api/auth";
-import { ApiError } from "@/api/client";
+import { ApiError, setOnUnauthorized } from "@/api/client";
 import { getToken, removeToken, setToken } from "@/storage/authStorage";
 import type { AuthState, LoginRequest, RegisterRequest, User } from "@/types/auth";
 
@@ -21,6 +21,15 @@ const persistSession = async (user: User, accessToken: string): Promise<User> =>
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      void removeToken();
+      setUser(null);
+    });
+
+    return () => setOnUnauthorized(null);
+  }, []);
 
   useEffect(() => {
     const restoreSession = async () => {

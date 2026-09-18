@@ -111,6 +111,43 @@ List response:
 
 Create product body: `{ name, description, price, discountPrice?, stockQuantity?, categoryId, imageUrl?, isActive? }`. `price` and `discountPrice` must be ≥ 0; `discountPrice` cannot exceed `price`; `categoryId` must exist.
 
+## Cart
+
+All cart routes require a Bearer token. The JWT user owns the cart — `userId` is never taken from the body, query, or params. CUSTOMER and ADMIN both use their own cart.
+
+| Method | Path | Auth | Body |
+| --- | --- | --- | --- |
+| `GET` | `/api/cart` | Authenticated | — |
+| `POST` | `/api/cart/items` | Authenticated | `{ productId, quantity }` |
+| `PATCH` | `/api/cart/items/:id` | Authenticated | `{ quantity }` |
+| `DELETE` | `/api/cart/items/:id` | Authenticated | — |
+
+A cart is created lazily on first `GET` or add. An empty cart is `{ id, items: [], subtotal: 0 }`.
+
+`POST` **adds** quantity to an existing line for the same product (no duplicate `CartItem`s). `PATCH` **sets** the quantity. Quantity must be an integer ≥ 1. Inactive products, inactive categories, and requested quantity above `stockQuantity` are rejected with **400**. Missing products/items return **404**. Another user's cart item is **404** (not leaked).
+
+Prices and `subtotal` are calculated on the server from the product `discountPrice` (or `price`). The client cannot send price or subtotal. Adding to the cart does not reduce stock.
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "...",
+    "items": [
+      {
+        "id": "...",
+        "quantity": 2,
+        "lineTotal": 160,
+        "product": { "id": "...", "name": "Milk", "price": 100, "discountPrice": 80, "imageUrl": null, "stockQuantity": 20 }
+      }
+    ],
+    "subtotal": 160
+  }
+}
+```
+
 ## Authorization matrix
 
 | Access | Routes |
@@ -119,7 +156,7 @@ Create product body: `{ name, description, price, discountPrice?, stockQuantity?
 | Authenticated (`CUSTOMER` or `ADMIN`) | `GET /api/auth/me`; cart (`GET /api/cart`, `POST /api/cart/items`, `PATCH\|DELETE /api/cart/items/:id`); addresses (`GET\|POST /api/addresses`, `PATCH\|DELETE /api/addresses/:id`); customer orders (`POST\|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`) |
 | `ADMIN` only | `POST\|PATCH\|DELETE /api/categories`, `POST\|PATCH\|DELETE /api/products`, `PATCH /api/admin/orders/:id/status` |
 
-Cart, address, and order **business logic** is not implemented yet (those handlers return 501 after authorization).
+Address and order **business logic** is not implemented yet (those handlers return 501 after authorization).
 
 ## Scripts
 
@@ -132,12 +169,12 @@ Cart, address, and order **business logic** is not implemented yet (those handle
 | `npm run lint:fix`              | Lint and auto-fix                            |
 | `npm run format`                | Format files with Prettier                   |
 | `npm run format:check`          | Check formatting without writing             |
-| `npm test`                      | Catalog API checks (`node:test`)             |
+| `npm test`                      | Auth, catalog, and cart API checks (`node:test`) |
 | `npm run prisma:generate`       | Generate Prisma Client                       |
 | `npm run prisma:migrate`        | Create and apply migrations (`migrate dev`)  |
 | `npm run prisma:migrate:deploy` | Apply existing migrations (`migrate deploy`) |
 
 ## Notes
 
-- Cart, address, and order **business logic** is not implemented yet (routes return 501).
+- Address and order **business logic** is not implemented yet (routes return 501).
 - Never commit `.env` or real secrets.

@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { Button } from "@/components/Button";
+import { BrandLogo } from "@/components/BrandLogo";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
 import { toAuthErrorMessage, useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
 import type { AuthStackParamList } from "@/types/navigation";
-import { APP_NAME } from "@/utils/constants";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
@@ -46,7 +46,9 @@ export function LoginScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <Text style={styles.brand}>{APP_NAME}</Text>
+      <View style={styles.brand}>
+        <BrandLogo size="lg" />
+      </View>
       <Text style={styles.title}>Login</Text>
       <Text style={styles.subtitle}>Sign in with your email or phone.</Text>
       <Input
@@ -57,6 +59,8 @@ export function LoginScreen({ navigation }: Props) {
         error={fieldErrors.identifier}
         autoCapitalize="none"
         keyboardType="email-address"
+        englishOnly
+        textContentType="username"
       />
       <Input
         label="Password"
@@ -65,20 +69,24 @@ export function LoginScreen({ navigation }: Props) {
         onChangeText={setPassword}
         error={fieldErrors.password}
         secureTextEntry
+        englishOnly
+        textContentType="password"
       />
       {formError ? <ErrorMessage message={formError} /> : null}
       <Button title="Login" onPress={() => void onSubmit()} loading={submitting} disabled={submitting} />
-      <Button title="Don't have an account? Register" onPress={() => navigation.navigate("Register")} />
+      <Button
+        title="Don't have an account? Register"
+        onPress={() => navigation.navigate("Register")}
+        variant="ghost"
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   brand: {
-    fontSize: theme.typography.caption,
-    fontWeight: "700",
-    color: theme.colors.primary,
-    letterSpacing: 0.4,
+    alignItems: "center",
+    marginBottom: theme.spacing.sm,
   },
   title: {
     fontSize: theme.typography.title,
