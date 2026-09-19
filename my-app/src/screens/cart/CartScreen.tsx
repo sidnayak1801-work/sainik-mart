@@ -114,6 +114,7 @@ export function CartScreen({ navigation }: Props) {
             title="Your cart is empty"
             description="Add some products to your cart"
           />
+          <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
           <Button title="Continue Shopping" onPress={goShopping} />
         </View>
       ) : null}
@@ -139,6 +140,7 @@ export function CartScreen({ navigation }: Props) {
                 <Text style={styles.subtotalValue}>₹{cart?.subtotal ?? 0}</Text>
               </View>
               <Button title="Proceed to Checkout" onPress={() => undefined} disabled />
+              <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
               <Button title="Continue Shopping" onPress={goShopping} />
             </View>
           }

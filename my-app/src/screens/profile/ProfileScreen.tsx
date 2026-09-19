@@ -1,13 +1,22 @@
 import { StyleSheet, Text, View } from "react-native";
+import type { CompositeScreenProps } from "@react-navigation/native";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
+import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
 import { APP_TAGLINE } from "@/utils/constants";
 
-export function ProfileScreen() {
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, "Profile">,
+  NativeStackScreenProps<MainStackParamList>
+>;
+
+export function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
 
   return (
@@ -26,7 +35,8 @@ export function ProfileScreen() {
       ) : (
         <Text style={styles.subtitle}>You are signed in.</Text>
       )}
-      <Button title="Sign out" onPress={() => void logout()} />
+      <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
+      <Button title="Sign out" onPress={() => void logout()} variant="ghost" />
     </Screen>
   );
 }

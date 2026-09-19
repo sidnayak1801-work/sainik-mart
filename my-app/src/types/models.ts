@@ -54,3 +54,22 @@ export type Order = {
   id: string;
   status: string;
 };
+
+export type Address = {
+  id: string;
+  addressLine: string;
+  city: string;
+  pincode: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AddressInput = {
+  addressLine: string;
+  city: string;
+  pincode: string;
+};
+
+export type AddressUpdateInput = Partial<AddressInput>;
