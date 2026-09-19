@@ -50,10 +50,28 @@ export type Cart = {
   subtotal: number;
 };
 
-export type Order = {
+export type OrderLine = {
   id: string;
-  status: string;
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  total: number;
 };
+
+export type CreatedOrder = {
+  id: string;
+  addressId: string;
+  orderStatus: string;
+  paymentStatus: string;
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  totalAmount: number;
+  items: OrderLine[];
+};
+
+export type Order = CreatedOrder;
 
 export type Address = {
   id: string;

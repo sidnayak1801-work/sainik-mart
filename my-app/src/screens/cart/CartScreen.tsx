@@ -139,7 +139,7 @@ export function CartScreen({ navigation }: Props) {
                 <Text style={styles.subtotalLabel}>Subtotal</Text>
                 <Text style={styles.subtotalValue}>₹{cart?.subtotal ?? 0}</Text>
               </View>
-              <Button title="Proceed to Checkout" onPress={() => undefined} disabled />
+              <Button title="Proceed to Checkout" onPress={() => navigation.navigate("Checkout")} />
               <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
               <Button title="Continue Shopping" onPress={goShopping} />
             </View>

@@ -17,11 +17,14 @@ import type { MainStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<MainStackParamList, "AddressList">;
 
-export function AddressListScreen({ navigation }: Props) {
+export function AddressListScreen({ navigation, route }: Props) {
+  const selectForCheckout = Boolean(route.params?.selectForCheckout);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    route.params?.selectedAddressId ?? null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -30,15 +33,16 @@ export function AddressListScreen({ navigation }: Props) {
       const next = await listAddresses();
       setAddresses(next);
       setSelectedAddressId((current) => {
-        if (current && next.some((address) => address.id === current)) {
-          return current;
+        const preferred = route.params?.selectedAddressId ?? current;
+        if (preferred && next.some((address) => address.id === preferred)) {
+          return preferred;
         }
         return next[0]?.id ?? null;
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to load addresses.");
     }
-  }, []);
+  }, [route.params?.selectedAddressId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -51,8 +55,9 @@ export function AddressListScreen({ navigation }: Props) {
           if (cancelled) return;
           setAddresses(next);
           setSelectedAddressId((current) => {
-            if (current && next.some((address) => address.id === current)) {
-              return current;
+            const preferred = route.params?.selectedAddressId ?? current;
+            if (preferred && next.some((address) => address.id === preferred)) {
+              return preferred;
             }
             return next[0]?.id ?? null;
           });
@@ -71,8 +76,20 @@ export function AddressListScreen({ navigation }: Props) {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [route.params?.selectedAddressId]),
   );
+
+  const onSelect = (id: string) => {
+    if (selectForCheckout) {
+      navigation.navigate({
+        name: "Checkout",
+        params: { selectedAddressId: id },
+        merge: true,
+      });
+      return;
+    }
+    setSelectedAddressId(id);
+  };
 
   const confirmDelete = (address: Address) => {
     Alert.alert("Delete address?", "Are you sure you want to remove this address?", [
@@ -137,7 +154,7 @@ export function AddressListScreen({ navigation }: Props) {
               address={item}
               selected={selectedAddressId === item.id}
               disabled={deletingId === item.id}
-              onSelect={() => setSelectedAddressId(item.id)}
+              onSelect={() => onSelect(item.id)}
               onEdit={() => navigation.navigate("EditAddress", { addressId: item.id, address: item })}
               onDelete={() => confirmDelete(item)}
             />
