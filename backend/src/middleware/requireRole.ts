@@ -18,3 +18,6 @@ export const requireRole =
 
     next();
   };
+
+/** Use after authenticate on admin routes: authenticate, requireAdmin */
+export const requireAdmin = requireRole("ADMIN");

@@ -1,0 +1,119 @@
+.header {
+  margin: 0 0 20px;
+}
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.welcome {
+  margin: 0 0 24px;
+}
+
+.welcome h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+}
+
+.welcome p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+}
+
+.card:hover {
+  border-color: var(--color-primary);
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  color: var(--color-primary);
+}
+
+.card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.shell {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  color: var(--color-text-secondary);
+}
+
+.denied {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.deniedCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  max-width: 28rem;
+  text-align: center;
+}
+
+.deniedCard h1 {
+  margin: 0 0 8px;
+}
+
+.deniedCard p {
+  margin: 0 0 20px;
+  color: var(--color-text-secondary);
+}
+
+.deniedCard a,
+.deniedCard button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+}

@@ -4,7 +4,7 @@ import { create, getById, list, remove, update } from "../controllers/category.c
 import { asyncHandler } from "../middleware/asyncHandler";
 import { authenticate } from "../middleware/authenticate";
 import { optionalAuthenticate } from "../middleware/optionalAuthenticate";
-import { requireRole } from "../middleware/requireRole";
+import { requireAdmin } from "../middleware/requireRole";
 import { validate } from "../middleware/validate";
 import { createCategorySchema, updateCategorySchema } from "../validators/category.validators";
 import { idParamSchema } from "../validators/common.validators";
@@ -16,14 +16,14 @@ categoryRouter.get("/:id", optionalAuthenticate, validate(idParamSchema, "params
 categoryRouter.post(
   "/",
   authenticate,
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(createCategorySchema),
   asyncHandler(create),
 );
 categoryRouter.patch(
   "/:id",
   authenticate,
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(idParamSchema, "params"),
   validate(updateCategorySchema),
   asyncHandler(update),
@@ -31,7 +31,7 @@ categoryRouter.patch(
 categoryRouter.delete(
   "/:id",
   authenticate,
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(idParamSchema, "params"),
   asyncHandler(remove),
 );
