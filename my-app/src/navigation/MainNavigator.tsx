@@ -59,7 +59,7 @@ export function MainNavigator() {
         options={({ route }) => ({ title: route.params.title ?? "Products" })}
       />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} options={{ title: "Product" }} />
-      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+      <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} options={{ title: "Order Details" }} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Checkout" }} />
       <Stack.Screen name="AddressList" component={AddressListScreen} options={{ title: "Delivery Address" }} />
       <Stack.Screen name="AddAddress" component={AddAddressScreen} options={{ title: "Add Address" }} />

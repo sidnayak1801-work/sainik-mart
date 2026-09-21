@@ -68,10 +68,29 @@ export type CreatedOrder = {
   deliveryFee: number;
   discount: number;
   totalAmount: number;
+  createdAt?: string;
   items: OrderLine[];
 };
 
-export type Order = CreatedOrder;
+export type OrderAddress = {
+  id: string;
+  addressLine: string;
+  city: string;
+  pincode: string;
+};
+
+export type OrderSummary = {
+  id: string;
+  orderStatus: string;
+  paymentStatus: string;
+  totalAmount: number;
+  createdAt: string;
+  itemCount: number;
+};
+
+export type Order = CreatedOrder & {
+  address?: OrderAddress;
+};
 
 export type Address = {
   id: string;

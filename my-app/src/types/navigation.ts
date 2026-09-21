@@ -19,7 +19,7 @@ export type MainStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   ProductList: { categoryId?: string; title?: string; search?: string };
   ProductDetails: { productId: string };
-  OrderDetails: { orderId?: string };
+  OrderDetails: { orderId: string };
   Checkout: { selectedAddressId?: string } | undefined;
   AddressList: { selectForCheckout?: boolean; selectedAddressId?: string } | undefined;
   AddAddress: undefined;

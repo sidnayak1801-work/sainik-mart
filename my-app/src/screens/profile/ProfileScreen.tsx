@@ -35,6 +35,7 @@ export function ProfileScreen({ navigation }: Props) {
       ) : (
         <Text style={styles.subtitle}>You are signed in.</Text>
       )}
+      <Button title="My Orders" onPress={() => navigation.navigate("Orders")} />
       <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
       <Button title="Sign out" onPress={() => void logout()} variant="ghost" />
     </Screen>
