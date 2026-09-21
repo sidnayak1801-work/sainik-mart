@@ -33,6 +33,11 @@ export const updateProductSchema = z
     message: "At least one field is required",
   });
 
+const optionalBooleanQuery = z.preprocess((value) => {
+  if (value === undefined || value === "") return undefined;
+  return value;
+}, z.enum(["true", "false"]).optional());
+
 export const productListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -42,6 +47,13 @@ export const productListQuerySchema = z.object({
     .optional()
     .transform((value) => (value === "" ? undefined : value)),
   categoryId: z.string().uuid().optional(),
+  isActive: optionalBooleanQuery.transform((value) =>
+    value === undefined ? undefined : value === "true",
+  ),
+  stockStatus: z.preprocess((value) => {
+    if (value === undefined || value === "") return undefined;
+    return value;
+  }, z.enum(["in", "low", "out"]).optional()),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

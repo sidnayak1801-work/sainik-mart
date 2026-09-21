@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { App } from "@/App";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 import type { User } from "@/types/auth";
 
 const adminUser: User = {
@@ -71,6 +72,18 @@ const mockBackend = () => {
         return jsonResponse(401, { success: false, message: "Authentication required" });
       }
 
+      if (url.includes("/api/categories") && method === "GET") {
+        return jsonResponse(200, { success: true, data: [] });
+      }
+
+      if (url.includes("/api/products") && method === "GET") {
+        return jsonResponse(200, {
+          success: true,
+          data: [],
+          pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        });
+      }
+
       return jsonResponse(404, { success: false, message: "Not found" });
     }),
   );
@@ -80,7 +93,9 @@ const renderApp = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );
@@ -150,7 +165,7 @@ describe("admin dashboard shell", () => {
       renderApp(path);
       await waitForSession();
       expect(screen.getByRole("heading", { name: "Access Denied" })).toBeInTheDocument();
-      expect(screen.queryByText("Product management will be available here.")).not.toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Admin" })).not.toBeInTheDocument();
     },
   );
 

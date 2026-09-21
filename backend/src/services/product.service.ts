@@ -6,6 +6,15 @@ import { prisma } from "../utils/prisma";
 
 const canSeeInactive = (role?: Role): boolean => role === "ADMIN";
 
+export const LOW_STOCK_THRESHOLD = 5;
+
+const stockStatusWhere = (status: ProductListQuery["stockStatus"]): Prisma.IntFilter | number | undefined => {
+  if (status === "out") return 0;
+  if (status === "low") return { gt: 0, lte: LOW_STOCK_THRESHOLD };
+  if (status === "in") return { gt: LOW_STOCK_THRESHOLD };
+  return undefined;
+};
+
 const toMoney = (value: Prisma.Decimal | null): number | null => {
   if (value === null) {
     return null;
@@ -51,9 +60,13 @@ const productInclude = {
 } as const;
 
 export const listProducts = async (query: ProductListQuery, role?: Role) => {
-  const { page, limit, search, categoryId } = query;
+  const { page, limit, search, categoryId, isActive, stockStatus } = query;
+  const admin = canSeeInactive(role);
+  const stockFilter = admin ? stockStatusWhere(stockStatus) : undefined;
   const where: Prisma.ProductWhereInput = {
-    ...(canSeeInactive(role) ? {} : { isActive: true, category: { isActive: true } }),
+    ...(admin ? {} : { isActive: true, category: { isActive: true } }),
+    ...(admin && isActive !== undefined ? { isActive } : {}),
+    ...(stockFilter !== undefined ? { stockQuantity: stockFilter } : {}),
     ...(categoryId ? { categoryId } : {}),
     ...(search
       ? {

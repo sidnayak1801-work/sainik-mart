@@ -2,8 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-import { AuthProvider } from "@/auth/AuthProvider";
 import { App } from "@/App";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 import "@/theme/tokens.css";
 
 const root = document.getElementById("root");
@@ -16,7 +17,9 @@ createRoot(root).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

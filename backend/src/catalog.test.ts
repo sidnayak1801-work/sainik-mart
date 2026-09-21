@@ -332,6 +332,88 @@ test("public catalog hides products in inactive categories", async () => {
   assert.equal(adminDetail.status, 200);
 });
 
+test("admin list includes inactive products and honors isActive/stockStatus filters", async () => {
+  const outOfStock = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Zero Stock`,
+    description: "Out of stock item",
+    price: 20,
+    stockQuantity: 0,
+    categoryId,
+  });
+  assert.equal(outOfStock.status, 201);
+  const outId = (outOfStock.body.data as { id: string }).id;
+
+  const lowStock = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Low Stock`,
+    description: "Low stock item",
+    price: 20,
+    stockQuantity: 3,
+    categoryId,
+  });
+  assert.equal(lowStock.status, 201);
+  const lowId = (lowStock.body.data as { id: string }).id;
+
+  const deactivated = await authJson(adminToken, "DELETE", `/api/products/${outId}`);
+  assert.equal(deactivated.status, 200);
+
+  const adminAll = await authJson(adminToken, "GET", `/api/products?search=Day11%20${stamp}&limit=50`);
+  assert.equal(adminAll.status, 200);
+  const adminItems = adminAll.body.data as Array<{ id: string; isActive: boolean }>;
+  assert.equal(adminItems.some((item) => item.id === outId && item.isActive === false), true);
+
+  const inactiveOnly = await authJson(
+    adminToken,
+    "GET",
+    `/api/products?isActive=false&search=Day11%20${stamp}&limit=50`,
+  );
+  assert.equal(inactiveOnly.status, 200);
+  const inactiveItems = inactiveOnly.body.data as Array<{ id: string; isActive: boolean }>;
+  assert.ok(inactiveItems.length >= 1);
+  assert.ok(inactiveItems.every((item) => item.isActive === false));
+  assert.equal(inactiveItems.some((item) => item.id === outId), true);
+
+  const customerSpoof = await authJson(
+    customerToken,
+    "GET",
+    `/api/products?isActive=false&search=Day11%20${stamp}&limit=50`,
+  );
+  assert.equal(customerSpoof.status, 200);
+  const customerItems = customerSpoof.body.data as Array<{ id: string }>;
+  assert.equal(customerItems.some((item) => item.id === outId), false);
+
+  const outList = await authJson(
+    adminToken,
+    "GET",
+    `/api/products?stockStatus=out&search=Day11%20${stamp}&limit=50`,
+  );
+  assert.equal(outList.status, 200);
+  const outItems = outList.body.data as Array<{ id: string; stockQuantity: number }>;
+  assert.ok(outItems.every((item) => item.stockQuantity === 0));
+  assert.equal(outItems.some((item) => item.id === outId), true);
+
+  const lowList = await authJson(
+    adminToken,
+    "GET",
+    `/api/products?stockStatus=low&search=Day11%20${stamp}&limit=50`,
+  );
+  assert.equal(lowList.status, 200);
+  const lowItems = lowList.body.data as Array<{ id: string; stockQuantity: number }>;
+  assert.ok(lowItems.every((item) => item.stockQuantity > 0 && item.stockQuantity <= 5));
+  assert.equal(lowItems.some((item) => item.id === lowId), true);
+
+  const publicOut = await request(`/api/products?stockStatus=out&search=Day11%20${stamp}&limit=50`);
+  assert.equal(publicOut.status, 200);
+  const publicOutItems = publicOut.body.data as Array<{ id: string }>;
+  assert.equal(publicOutItems.some((item) => item.id === outId), false);
+});
+
+test("admin update rejects discount above price", async () => {
+  const result = await authJson(adminToken, "PATCH", `/api/products/${productId}`, {
+    discountPrice: 999,
+  });
+  assert.equal(result.status, 400);
+});
+
 test("invalid product id and public hides inactive products", async () => {
   const invalid = await request("/api/products/not-a-uuid");
   assert.equal(invalid.status, 400);

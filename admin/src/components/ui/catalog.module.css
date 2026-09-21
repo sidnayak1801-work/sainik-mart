@@ -1,0 +1,113 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+  align-items: center;
+}
+
+.toolbar input,
+.toolbar select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  background: var(--color-surface);
+  min-width: 160px;
+}
+
+.primary,
+.secondary,
+.danger,
+.link {
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.primary {
+  border: 0;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.danger {
+  border: 0;
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  padding: 0;
+}
+
+.primary:disabled,
+.secondary:disabled,
+.danger:disabled,
+.link:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.form input,
+.form select,
+.form textarea {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font: inherit;
+}
+
+.form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+.status {
+  padding: 28px 8px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.grow {
+  margin-left: auto;
+}
