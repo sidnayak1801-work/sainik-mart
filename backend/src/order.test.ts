@@ -34,7 +34,30 @@ type OrderData = {
   deliveryFee: number;
   discount: number;
   totalAmount: number;
+  createdAt?: string;
   items: OrderItemData[];
+  address?: {
+    id: string;
+    addressLine: string;
+    city: string;
+    pincode: string;
+  };
+};
+
+type OrderSummary = {
+  id: string;
+  orderStatus: string;
+  paymentStatus: string;
+  totalAmount: number;
+  createdAt: string;
+  itemCount: number;
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
 const MISSING_ID = "00000000-0000-4000-8000-000000000000";
@@ -200,6 +223,35 @@ test("create order requires a valid JWT and addressId", async () => {
 
   const emptyId = await authJson(customerAToken, "POST", "/api/orders", { addressId: "" });
   assert.equal(emptyId.status, 400);
+
+  const missingList = await json("GET", "/api/orders");
+  assert.equal(missingList.status, 401);
+
+  const invalidList = await json("GET", "/api/orders", undefined, {
+    Authorization: "Bearer not-a-token",
+  });
+  assert.equal(invalidList.status, 401);
+
+  const missingDetail = await json("GET", `/api/orders/${MISSING_ID}`);
+  assert.equal(missingDetail.status, 401);
+
+  const invalidDetail = await json("GET", `/api/orders/${MISSING_ID}`, undefined, {
+    Authorization: "Bearer not-a-token",
+  });
+  assert.equal(invalidDetail.status, 401);
+
+  const malformed = await authJson(customerAToken, "GET", "/api/orders/not-a-uuid");
+  assert.equal(malformed.status, 400);
+  assert.equal((malformed.body as { message?: string }).message, "Validation failed");
+  assert.equal(malformed.body.data, undefined);
+
+  const empty = await authJson(customerBToken, "GET", "/api/orders");
+  assert.equal(empty.status, 200);
+  assert.deepEqual(empty.body.data, []);
+  const emptyPagination = empty.body.pagination as Pagination;
+  assert.equal(emptyPagination.total, 0);
+  assert.equal(emptyPagination.totalPages, 0);
+  assert.equal(emptyPagination.page, 1);
 });
 
 test("empty cart and invalid addresses are rejected", async () => {
@@ -390,4 +442,119 @@ test("rejects inactive category and blocks deleting an address used by an order"
     (deleted.body as { message?: string }).message,
     "Address cannot be deleted because it is used by an order",
   );
+});
+
+test("lists only the authenticated user's orders, newest first, and paginates", async () => {
+  const listed = await authJson(customerAToken, "GET", "/api/orders?limit=50");
+  assert.equal(listed.status, 200);
+  const summaries = listed.body.data as OrderSummary[];
+  assert.ok(summaries.length >= 2);
+  assert.ok(summaries.every((order) => typeof order.id === "string"));
+  assert.ok(summaries.every((order) => order.itemCount >= 1));
+  const createdAts = summaries.map((order) => new Date(order.createdAt).getTime());
+  const sorted = [...createdAts].sort((a, b) => b - a);
+  assert.deepEqual(createdAts, sorted);
+
+  const aIds = new Set(
+    (
+      await prisma.order.findMany({
+        where: { userId: customerAId },
+        select: { id: true },
+      })
+    ).map((order) => order.id),
+  );
+  assert.deepEqual(new Set(summaries.map((order) => order.id)), aIds);
+
+  const bOrder = await prisma.order.findFirst({ where: { userId: customerBId }, select: { id: true } });
+  if (bOrder) {
+    assert.equal(summaries.some((order) => order.id === bOrder.id), false);
+  }
+
+  const spoof = await authJson(
+    customerAToken,
+    "GET",
+    `/api/orders?userId=${customerBId}&limit=50`,
+  );
+  assert.equal(spoof.status, 200);
+  const spoofIds = (spoof.body.data as OrderSummary[]).map((order) => order.id);
+  assert.deepEqual(new Set(spoofIds), aIds);
+
+  const page1 = await authJson(customerAToken, "GET", "/api/orders?page=1&limit=1");
+  assert.equal(page1.status, 200);
+  const page1Data = page1.body.data as OrderSummary[];
+  const pagination = page1.body.pagination as Pagination;
+  assert.equal(page1Data.length, 1);
+  assert.equal(pagination.page, 1);
+  assert.equal(pagination.limit, 1);
+  assert.ok(pagination.total >= 2);
+  assert.equal(pagination.totalPages, Math.ceil(pagination.total / 1));
+  assert.equal(page1Data[0]?.id, summaries[0]?.id);
+
+  const page2 = await authJson(customerAToken, "GET", "/api/orders?page=2&limit=1");
+  assert.equal(page2.status, 200);
+  assert.equal((page2.body.data as OrderSummary[])[0]?.id, summaries[1]?.id);
+});
+
+test("returns own order details with snapshots and hides other users' orders", async () => {
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await addToCart(customerAToken, productAId, 2)).status, 201);
+  assert.equal((await addToCart(customerAToken, productBId, 1)).status, 201);
+  assert.equal((await addToCart(customerAToken, productCId, 3)).status, 201);
+
+  const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
+  assert.equal(created.status, 201);
+  const createdOrder = orderOf(created);
+  assert.equal(createdOrder.orderStatus, "PENDING");
+
+  const patched = await authJson(adminToken, "PATCH", `/api/products/${productAId}`, {
+    price: 999,
+    discountPrice: 900,
+  });
+  assert.equal(patched.status, 200);
+
+  const detail = await authJson(customerAToken, "GET", `/api/orders/${createdOrder.id}`);
+  assert.equal(detail.status, 200);
+  const order = orderOf(detail);
+  assert.equal(order.id, createdOrder.id);
+  assert.equal(order.orderStatus, "PENDING");
+  assert.equal(order.paymentStatus, "PENDING");
+  assert.equal(order.addressId, addressAId);
+  assert.equal(order.address?.id, addressAId);
+  assert.equal(order.address?.addressLine, "12 Order Street");
+  assert.equal(order.address?.city, "Delhi");
+  assert.equal(order.address?.pincode, "110001");
+  assert.equal(order.items.length, 3);
+
+  const lineA = order.items.find((item) => item.productId === productAId);
+  const lineB = order.items.find((item) => item.productId === productBId);
+  const lineC = order.items.find((item) => item.productId === productCId);
+  assert.equal(lineA?.quantity, 2);
+  assert.equal(lineA?.price, 80);
+  assert.equal(lineA?.total, 160);
+  assert.equal(lineB?.quantity, 1);
+  assert.equal(lineB?.price, 50);
+  assert.equal(lineB?.total, 50);
+  assert.equal(lineC?.quantity, 3);
+  assert.equal(lineC?.price, 25);
+  assert.equal(lineC?.total, 75);
+  assert.equal(order.subtotal, 285);
+  assert.equal(order.totalAmount, 285);
+
+  const missing = await authJson(customerAToken, "GET", `/api/orders/${MISSING_ID}`);
+  assert.equal(missing.status, 404);
+  assert.equal((missing.body as { message?: string }).message, "Order not found");
+  assert.equal(missing.body.data, undefined);
+
+  let bOrder = await prisma.order.findFirst({ where: { userId: customerBId }, select: { id: true } });
+  if (!bOrder) {
+    await prisma.cartItem.deleteMany({ where: { cart: { userId: customerBId } } });
+    assert.equal((await addToCart(customerBToken, productBId, 1)).status, 201);
+    const createdB = await authJson(customerBToken, "POST", "/api/orders", { addressId: addressBId });
+    assert.equal(createdB.status, 201);
+    bOrder = { id: orderOf(createdB).id };
+  }
+  const cross = await authJson(customerAToken, "GET", `/api/orders/${bOrder.id}`);
+  assert.equal(cross.status, 404);
+  assert.equal((cross.body as { message?: string }).message, "Order not found");
+  assert.equal(cross.body.data, undefined);
 });

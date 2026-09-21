@@ -1,6 +1,6 @@
 import { Prisma, type OrderItem } from "@prisma/client";
 
-import type { CreateOrderInput } from "../validators/order.validators";
+import type { CreateOrderInput, OrderListQuery } from "../validators/order.validators";
 import { AppError } from "../utils/AppError";
 import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
@@ -26,7 +26,25 @@ const orderInclude = {
   },
 } as const;
 
+const orderDetailInclude = {
+  items: {
+    orderBy: { createdAt: "asc" as const },
+  },
+  address: {
+    select: {
+      id: true,
+      addressLine: true,
+      city: true,
+      pincode: true,
+    },
+  },
+} as const;
+
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
+type OrderWithDetails = Prisma.OrderGetPayload<{ include: typeof orderDetailInclude }>;
+type OrderListRow = Prisma.OrderGetPayload<{
+  include: { _count: { select: { items: true } } };
+}>;
 
 const toMoney = (value: Prisma.Decimal): number => Number(value);
 
@@ -43,6 +61,7 @@ const serializeOrder = (order: OrderWithItems) => ({
   deliveryFee: toMoney(order.deliveryFee),
   discount: toMoney(order.discount),
   totalAmount: toMoney(order.totalAmount),
+  createdAt: order.createdAt,
   items: order.items.map((item: OrderItem) => ({
     id: item.id,
     productId: item.productId,
@@ -51,6 +70,25 @@ const serializeOrder = (order: OrderWithItems) => ({
     quantity: item.quantity,
     total: toMoney(item.total),
   })),
+});
+
+const serializeOrderSummary = (order: OrderListRow) => ({
+  id: order.id,
+  orderStatus: order.orderStatus,
+  paymentStatus: order.paymentStatus,
+  totalAmount: toMoney(order.totalAmount),
+  createdAt: order.createdAt,
+  itemCount: order._count.items,
+});
+
+const serializeOrderDetail = (order: OrderWithDetails) => ({
+  ...serializeOrder(order),
+  address: {
+    id: order.address.id,
+    addressLine: order.address.addressLine,
+    city: order.address.city,
+    pincode: order.address.pincode,
+  },
 });
 
 const assertPurchasable = (product: { isActive: boolean; category: { isActive: boolean } }) => {
@@ -155,12 +193,48 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
   return serializeOrder(created);
 };
 
-export const listOrders = async (_userId: string) => {
-  return notImplemented("List orders");
+export const listOrders = async (userId: string, query: OrderListQuery) => {
+  const { page, limit } = query;
+  const where: Prisma.OrderWhereInput = { userId };
+  const skip = (page - 1) * limit;
+
+  const [total, orders] = await prisma.$transaction([
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where,
+      include: {
+        _count: {
+          select: { items: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+  ]);
+
+  return {
+    items: orders.map(serializeOrderSummary),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    },
+  };
 };
 
-export const getOrderById = async (_userId: string, _id: string) => {
-  return notImplemented("Get order");
+export const getOrderById = async (userId: string, id: string) => {
+  const order = await prisma.order.findFirst({
+    where: { id, userId },
+    include: orderDetailInclude,
+  });
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  return serializeOrderDetail(order);
 };
 
 export const cancelOrder = async (_userId: string, _id: string) => {

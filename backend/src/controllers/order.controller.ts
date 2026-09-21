@@ -9,6 +9,7 @@ import {
 } from "../services/order.service";
 import { AppError } from "../utils/AppError";
 import { paramId } from "../utils/params";
+import type { OrderListQuery } from "../validators/order.validators";
 
 const requireUserId = (req: Request): string => {
   if (!req.user) {
@@ -23,8 +24,8 @@ export const create = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const list = async (req: Request, res: Response): Promise<void> => {
-  const data = await listOrders(requireUserId(req));
-  res.status(200).json({ success: true, data });
+  const { items, pagination } = await listOrders(requireUserId(req), req.query as unknown as OrderListQuery);
+  res.status(200).json({ success: true, data: items, pagination });
 };
 
 export const getById = async (req: Request, res: Response): Promise<void> => {
