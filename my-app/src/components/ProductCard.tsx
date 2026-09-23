@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { theme } from "@/theme";
 import type { Product } from "@/types/models";
+import { cloudinaryImage } from "@/utils/image";
 
 type ProductCardProps = {
   product: Product;
@@ -17,7 +18,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
   return (
     <Pressable onPress={onPress} style={styles.card}>
       {product.imageUrl ? (
-        <Image source={{ uri: product.imageUrl }} style={styles.image} contentFit="cover" />
+        <Image source={{ uri: cloudinaryImage(product.imageUrl, "card") }} style={styles.image} contentFit="cover" />
       ) : (
         <View style={styles.image} />
       )}

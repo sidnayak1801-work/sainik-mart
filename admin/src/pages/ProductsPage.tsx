@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { listCategories } from "@/api/categories";
 import { ApiError } from "@/api/client";
 import { createProduct, deactivateProduct, listProducts, updateProduct, type ProductInput } from "@/api/products";
+import { uploadImage } from "@/api/uploads";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -117,6 +118,7 @@ export const ProductsPage = () => {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [pending, setPending] = useState<Product | null>(null);
   const [working, setWorking] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
@@ -167,6 +169,23 @@ export const ProductsPage = () => {
     setEditor(product);
     setForm(formFromProduct(product));
     setFormError(null);
+  };
+
+  const onPickImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setFormError(null);
+    try {
+      const uploaded = await uploadImage(file);
+      setForm((current) => ({ ...current, imageUrl: uploaded.url }));
+      notify("Image uploaded.");
+    } catch (err) {
+      setFormError(errorMessage(err));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const onSubmit = async (event: FormEvent) => {
@@ -304,6 +323,17 @@ export const ProductsPage = () => {
               />
             </label>
             <label>
+              Choose image
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Choose image"
+                onChange={(event) => void onPickImage(event)}
+                disabled={saving || uploading}
+              />
+            </label>
+            {uploading ? <p className={catalog.status}>Uploading image...</p> : null}
+            <label>
               Image URL
               <input
                 type="url"
@@ -311,7 +341,7 @@ export const ProductsPage = () => {
                 placeholder="https://…"
                 value={form.imageUrl}
                 onChange={(event) => setForm((current) => ({ ...current, imageUrl: event.target.value }))}
-                disabled={saving}
+                disabled={saving || uploading}
               />
             </label>
             {form.imageUrl.trim() ? (
@@ -389,7 +419,7 @@ export const ProductsPage = () => {
               <button type="button" className={catalog.secondary} onClick={() => setEditor(null)} disabled={saving}>
                 Cancel
               </button>
-              <button type="submit" className={catalog.primary} disabled={saving}>
+              <button type="submit" className={catalog.primary} disabled={saving || uploading}>
                 {saving ? "Saving..." : editor === "create" ? "Create" : "Save Changes"}
               </button>
             </div>

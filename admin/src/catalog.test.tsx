@@ -132,6 +132,16 @@ const mockCatalog = () => {
         });
       }
 
+      if (url.pathname === "/api/admin/uploads" && method === "POST") {
+        return jsonResponse(200, {
+          success: true,
+          data: {
+            url: "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/banana.jpg",
+            publicId: "sainik-mart/products/banana",
+          },
+        });
+      }
+
       if (url.pathname === "/api/products" && method === "POST") {
         const body = JSON.parse(String(init?.body ?? "{}")) as Partial<Product> & { name: string };
         const created = milk({
@@ -245,6 +255,36 @@ describe("admin catalog management", () => {
     expect(products.some((item) => item.name === "Paneer 200g" && item.imageUrl === "https://example.com/paneer.jpg")).toBe(
       true,
     );
+  });
+
+  test("admin can upload a product image and save the Cloudinary URL", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/products");
+    expect(await screen.findByText("Toned Milk 1L")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add Product" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Product" });
+    const file = new File(["fake-image"], "banana.jpg", { type: "image/jpeg" });
+    await user.upload(within(dialog).getByLabelText("Choose image"), file);
+    expect(await screen.findByText("Image uploaded.")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Image URL")).toHaveValue(
+      "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/banana.jpg",
+    );
+
+    await user.type(within(dialog).getByLabelText("Name"), "Bananas 6 pcs");
+    await user.type(within(dialog).getByLabelText("Description"), "Ripe bananas");
+    await user.type(within(dialog).getByLabelText("Price"), "50");
+    await user.selectOptions(within(dialog).getByLabelText("Category"), dairy.id);
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Product created.")).toBeInTheDocument();
+    expect(
+      products.some(
+        (item) =>
+          item.name === "Bananas 6 pcs" &&
+          item.imageUrl === "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/banana.jpg",
+      ),
+    ).toBe(true);
   });
 
   test("product search uses the backend query", async () => {

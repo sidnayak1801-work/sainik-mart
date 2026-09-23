@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { theme } from "@/theme";
 import type { CartLineItem } from "@/types/models";
+import { cloudinaryImage } from "@/utils/image";
 
 type CartItemRowProps = {
   item: CartLineItem;
@@ -20,7 +21,7 @@ export function CartItemRow({ item, disabled = false, onIncrease, onDecrease, on
   return (
     <View style={[styles.card, disabled ? styles.disabled : null]}>
       {item.product.imageUrl ? (
-        <Image source={{ uri: item.product.imageUrl }} style={styles.image} contentFit="cover" />
+        <Image source={{ uri: cloudinaryImage(item.product.imageUrl, "cart") }} style={styles.image} contentFit="cover" />
       ) : (
         <View style={styles.image} />
       )}

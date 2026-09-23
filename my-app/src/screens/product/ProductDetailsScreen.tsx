@@ -14,6 +14,7 @@ import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
 import type { Product } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
+import { cloudinaryImage } from "@/utils/image";
 
 type Props = NativeStackScreenProps<MainStackParamList, "ProductDetails">;
 
@@ -72,7 +73,7 @@ export function ProductDetailsScreen({ navigation, route }: Props) {
       {product ? (
         <>
           {product.imageUrl ? (
-            <Image source={{ uri: product.imageUrl }} style={styles.image} contentFit="cover" />
+            <Image source={{ uri: cloudinaryImage(product.imageUrl, "detail") }} style={styles.image} contentFit="cover" />
           ) : (
             <View style={styles.image} />
           )}

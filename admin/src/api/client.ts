@@ -63,7 +63,7 @@ const apiBaseUrl = (): string => {
   return value.replace(/\/$/, "");
 };
 
-const request = async <T>(method: HttpMethod, path: string, body?: unknown): Promise<T> => {
+const resolveBaseUrl = (): string => {
   const base = apiBaseUrl();
   if (!base) {
     throw new ApiError(
@@ -71,7 +71,24 @@ const request = async <T>(method: HttpMethod, path: string, body?: unknown): Pro
       0,
     );
   }
+  return base;
+};
 
+const parseResponse = async <T>(response: Response, token: string | null): Promise<T> => {
+  const data: unknown = await response.json().catch(() => undefined);
+
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      onUnauthorized?.();
+    }
+    throw new ApiError(userMessageForStatus(response.status, data), response.status, data);
+  }
+
+  return data as T;
+};
+
+const request = async <T>(method: HttpMethod, path: string, body?: unknown): Promise<T> => {
+  const base = resolveBaseUrl();
   const url = `${base}${path}`;
   const token = isPublicAuthPath(path) ? null : getToken();
   const headers: Record<string, string> = {
@@ -94,21 +111,39 @@ const request = async <T>(method: HttpMethod, path: string, body?: unknown): Pro
     throw new ApiError("Unable to reach the API. Start it with npm run api from the repo root, then retry.", 0);
   }
 
-  const data: unknown = await response.json().catch(() => undefined);
+  return parseResponse<T>(response, token);
+};
 
-  if (!response.ok) {
-    if (response.status === 401 && token) {
-      onUnauthorized?.();
-    }
-    throw new ApiError(userMessageForStatus(response.status, data), response.status, data);
+const requestForm = async <T>(path: string, body: FormData): Promise<T> => {
+  const base = resolveBaseUrl();
+  const url = `${base}${path}`;
+  const token = getToken();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  return data as T;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers,
+      body,
+    });
+  } catch {
+    throw new ApiError("Unable to reach the API. Start it with npm run api from the repo root, then retry.", 0);
+  }
+
+  return parseResponse<T>(response, token);
 };
 
 export const api = {
   get: <T>(path: string) => request<T>("GET", path),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  postForm: <T>(path: string, body: FormData) => requestForm<T>(path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
