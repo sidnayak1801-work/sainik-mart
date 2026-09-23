@@ -141,6 +141,7 @@ const mockCatalog = () => {
           price: body.price ?? 0,
           stockQuantity: body.stockQuantity ?? 0,
           categoryId: body.categoryId ?? dairy.id,
+          imageUrl: body.imageUrl ?? null,
         });
         products = [...products, created];
         return jsonResponse(201, { success: true, data: created });
@@ -223,6 +224,27 @@ describe("admin catalog management", () => {
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Deactivate" }));
 
     expect(await within(screen.getByRole("table")).findByText("Inactive")).toBeInTheDocument();
+  });
+
+  test("admin can create a product with an image URL", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/products");
+    expect(await screen.findByText("Toned Milk 1L")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add Product" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Product" });
+    await user.type(within(dialog).getByLabelText("Name"), "Paneer 200g");
+    await user.type(within(dialog).getByLabelText("Description"), "Fresh paneer");
+    await user.type(within(dialog).getByLabelText("Image URL"), "https://example.com/paneer.jpg");
+    await user.type(within(dialog).getByLabelText("Price"), "90");
+    await user.selectOptions(within(dialog).getByLabelText("Category"), dairy.id);
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Product created.")).toBeInTheDocument();
+    expect(await screen.findByText("Paneer 200g")).toBeInTheDocument();
+    expect(products.some((item) => item.name === "Paneer 200g" && item.imageUrl === "https://example.com/paneer.jpg")).toBe(
+      true,
+    );
   });
 
   test("product search uses the backend query", async () => {

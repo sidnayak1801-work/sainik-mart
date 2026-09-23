@@ -84,6 +84,14 @@ const mockBackend = () => {
         });
       }
 
+      if (url.includes("/api/admin/orders") && method === "GET") {
+        return jsonResponse(200, {
+          success: true,
+          data: [],
+          pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        });
+      }
+
       return jsonResponse(404, { success: false, message: "Not found" });
     }),
   );

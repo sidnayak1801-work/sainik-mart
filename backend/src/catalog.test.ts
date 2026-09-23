@@ -219,11 +219,13 @@ test("admin creates and updates products", async () => {
     discountPrice: 50,
     stockQuantity: 25,
     categoryId,
+    imageUrl: "https://example.com/milk.jpg",
   });
   assert.equal(milk.status, 201);
-  const milkProduct = milk.body.data as { id: string; price: number };
+  const milkProduct = milk.body.data as { id: string; price: number; imageUrl: string | null };
   productId = milkProduct.id;
   assert.equal(milkProduct.price, 60);
+  assert.equal(milkProduct.imageUrl, "https://example.com/milk.jpg");
 
   const bread = await authJson(adminToken, "POST", "/api/products", {
     name: `Day11 ${stamp} Bread`,
@@ -245,8 +247,10 @@ test("admin creates and updates products", async () => {
     stockQuantity: 40,
     price: 65,
     discountPrice: 55,
+    imageUrl: "",
   });
   assert.equal(updated.status, 200);
+  assert.equal((updated.body.data as { imageUrl: string | null }).imageUrl, null);
 });
 
 test("search, filter, and pagination", async () => {

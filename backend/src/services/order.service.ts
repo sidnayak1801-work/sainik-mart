@@ -1,6 +1,6 @@
-import { Prisma, type OrderItem } from "@prisma/client";
+import { OrderStatus, Prisma, type OrderItem } from "@prisma/client";
 
-import type { CreateOrderInput, OrderListQuery } from "../validators/order.validators";
+import type { AdminOrderListQuery, CreateOrderInput, OrderListQuery } from "../validators/order.validators";
 import { AppError } from "../utils/AppError";
 import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
@@ -40,10 +40,41 @@ const orderDetailInclude = {
   },
 } as const;
 
+const adminOrderDetailInclude = {
+  ...orderDetailInclude,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+    },
+  },
+} as const;
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const ALLOWED_ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+  CONFIRMED: [OrderStatus.PACKING],
+  PACKING: [OrderStatus.OUT_FOR_DELIVERY],
+  OUT_FOR_DELIVERY: [OrderStatus.DELIVERED],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 type OrderWithDetails = Prisma.OrderGetPayload<{ include: typeof orderDetailInclude }>;
+type AdminOrderWithDetails = Prisma.OrderGetPayload<{ include: typeof adminOrderDetailInclude }>;
 type OrderListRow = Prisma.OrderGetPayload<{
   include: { _count: { select: { items: true } } };
+}>;
+type AdminOrderListRow = Prisma.OrderGetPayload<{
+  include: {
+    _count: { select: { items: true } };
+    user: { select: { name: true; email: true; phone: true } };
+  };
 }>;
 
 const toMoney = (value: Prisma.Decimal): number => Number(value);
@@ -90,6 +121,27 @@ const serializeOrderDetail = (order: OrderWithDetails) => ({
     pincode: order.address.pincode,
   },
 });
+
+const serializeAdminOrderSummary = (order: AdminOrderListRow) => ({
+  ...serializeOrderSummary(order),
+  customer: {
+    name: order.user.name,
+    email: order.user.email,
+    phone: order.user.phone,
+  },
+});
+
+const serializeAdminOrderDetail = (order: AdminOrderWithDetails) => ({
+  ...serializeOrderDetail(order),
+  customer: {
+    id: order.user.id,
+    name: order.user.name,
+    email: order.user.email,
+    phone: order.user.phone,
+  },
+});
+
+const isUuid = (value: string): boolean => UUID_PATTERN.test(value);
 
 const assertPurchasable = (product: { isActive: boolean; category: { isActive: boolean } }) => {
   if (!product.isActive || !product.category.isActive) {
@@ -241,6 +293,90 @@ export const cancelOrder = async (_userId: string, _id: string) => {
   return notImplemented("Cancel order");
 };
 
-export const updateOrderStatus = async (_id: string, _status: unknown) => {
-  return notImplemented("Update order status");
+export const listAdminOrders = async (query: AdminOrderListQuery) => {
+  const { page, limit, status, search } = query;
+  const where: Prisma.OrderWhereInput = {};
+
+  if (status) {
+    where.orderStatus = status;
+  }
+
+  if (search) {
+    if (isUuid(search)) {
+      where.id = search;
+    } else {
+      where.user = {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
+        ],
+      };
+    }
+  }
+
+  const skip = (page - 1) * limit;
+  const [total, orders] = await prisma.$transaction([
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where,
+      include: {
+        _count: {
+          select: { items: true },
+        },
+        user: {
+          select: { name: true, email: true, phone: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+  ]);
+
+  return {
+    items: orders.map(serializeAdminOrderSummary),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    },
+  };
+};
+
+export const getAdminOrderById = async (id: string) => {
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: adminOrderDetailInclude,
+  });
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  return serializeAdminOrderDetail(order);
+};
+
+export const updateOrderStatus = async (id: string, status: OrderStatus) => {
+  const existing = await prisma.order.findUnique({
+    where: { id },
+    select: { id: true, orderStatus: true },
+  });
+
+  if (!existing) {
+    throw new AppError("Order not found", 404);
+  }
+
+  const allowed = ALLOWED_ORDER_STATUS_TRANSITIONS[existing.orderStatus];
+  if (!allowed.includes(status)) {
+    throw new AppError("Invalid status transition", 400);
+  }
+
+  await prisma.order.update({
+    where: { id },
+    data: { orderStatus: status },
+  });
+
+  return getAdminOrderById(id);
 };

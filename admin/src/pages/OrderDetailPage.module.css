@@ -1,0 +1,84 @@
+.back {
+  display: inline-block;
+  margin: 0 0 16px;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+
+.section h2 {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.section p,
+.section dl {
+  margin: 0;
+}
+
+.section dt {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin: 8px 0 2px;
+}
+
+.section dd {
+  margin: 0;
+}
+
+.totals {
+  margin-top: 12px;
+  text-align: right;
+  display: grid;
+  gap: 4px;
+}
+
+.totals strong {
+  font-size: 1.05rem;
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+
+.statusRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.statusRow select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  min-width: 180px;
+}
+
+.terminal {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+}

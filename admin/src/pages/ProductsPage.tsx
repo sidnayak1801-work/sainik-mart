@@ -25,6 +25,7 @@ const errorMessage = (error: unknown): string =>
 type FormState = {
   name: string;
   description: string;
+  imageUrl: string;
   price: string;
   discountPrice: string;
   stockQuantity: string;
@@ -35,6 +36,7 @@ type FormState = {
 const emptyForm = (): FormState => ({
   name: "",
   description: "",
+  imageUrl: "",
   price: "",
   discountPrice: "",
   stockQuantity: "0",
@@ -45,6 +47,7 @@ const emptyForm = (): FormState => ({
 const formFromProduct = (product: Product): FormState => ({
   name: product.name,
   description: product.description,
+  imageUrl: product.imageUrl ?? "",
   price: String(product.price),
   discountPrice: product.discountPrice === null ? "" : String(product.discountPrice),
   stockQuantity: String(product.stockQuantity),
@@ -52,9 +55,19 @@ const formFromProduct = (product: Product): FormState => ({
   isActive: product.isActive,
 });
 
-const parseForm = (form: FormState): { input?: ProductInput; error?: string } => {
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const parseForm = (form: FormState, mode: "create" | "edit"): { input?: ProductInput; error?: string } => {
   const name = form.name.trim();
   const description = form.description.trim();
+  const imageRaw = form.imageUrl.trim();
   const price = Number(form.price);
   const stockQuantity = Number(form.stockQuantity);
   const discountRaw = form.discountPrice.trim();
@@ -71,6 +84,9 @@ const parseForm = (form: FormState): { input?: ProductInput; error?: string } =>
   if (discountPrice !== undefined && discountPrice > price) {
     return { error: "Discount price cannot exceed regular price." };
   }
+  if (imageRaw && !isHttpUrl(imageRaw)) {
+    return { error: "Image URL must be a valid http(s) link." };
+  }
 
   return {
     input: {
@@ -78,6 +94,7 @@ const parseForm = (form: FormState): { input?: ProductInput; error?: string } =>
       description,
       price,
       discountPrice,
+      imageUrl: imageRaw === "" ? (mode === "edit" ? null : undefined) : imageRaw,
       stockQuantity,
       categoryId: form.categoryId,
       isActive: form.isActive,
@@ -154,7 +171,7 @@ export const ProductsPage = () => {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const parsed = parseForm(form);
+    const parsed = parseForm(form, editor === "create" ? "create" : "edit");
     if (parsed.error || !parsed.input) {
       setFormError(parsed.error ?? "Please check the form.");
       return;
@@ -286,6 +303,20 @@ export const ProductsPage = () => {
                 disabled={saving}
               />
             </label>
+            <label>
+              Image URL
+              <input
+                type="url"
+                aria-label="Image URL"
+                placeholder="https://…"
+                value={form.imageUrl}
+                onChange={(event) => setForm((current) => ({ ...current, imageUrl: event.target.value }))}
+                disabled={saving}
+              />
+            </label>
+            {form.imageUrl.trim() ? (
+              <img className={catalog.preview} src={form.imageUrl.trim()} alt="Product image preview" />
+            ) : null}
             <label>
               Price
               <input

@@ -2,13 +2,18 @@ import { z } from "zod";
 
 const money = z.number().min(0);
 
+const optionalImageUrl = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.string().url().max(2048).nullable().optional(),
+);
+
 export const createProductSchema = z
   .object({
     name: z.string().trim().min(1).max(180),
     description: z.string().trim().min(1),
     price: money,
     discountPrice: money.optional(),
-    imageUrl: z.string().url().max(2048).optional(),
+    imageUrl: optionalImageUrl,
     stockQuantity: z.number().int().min(0).optional(),
     categoryId: z.string().uuid(),
     isActive: z.boolean().optional(),
@@ -24,7 +29,7 @@ export const updateProductSchema = z
     description: z.string().trim().min(1).optional(),
     price: money.optional(),
     discountPrice: money.optional(),
-    imageUrl: z.string().url().max(2048).optional(),
+    imageUrl: optionalImageUrl,
     stockQuantity: z.number().int().min(0).optional(),
     categoryId: z.string().uuid().optional(),
     isActive: z.boolean().optional(),

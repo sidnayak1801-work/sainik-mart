@@ -22,6 +22,7 @@ export type ProductInput = {
   description: string;
   price: number;
   discountPrice?: number;
+  imageUrl?: string | null;
   stockQuantity: number;
   categoryId: string;
   isActive: boolean;

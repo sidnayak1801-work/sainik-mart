@@ -13,3 +13,16 @@ export const stockStatusLabel = (quantity: number): "In Stock" | "Low Stock" | "
   if (quantity <= LOW_STOCK_THRESHOLD) return "Low Stock";
   return "In Stock";
 };
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  PACKING: "Packing",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
+export const formatOrderStatus = (status: string): string => ORDER_STATUS_LABELS[status] ?? status;
+
+export const shortId = (id: string): string => id.slice(0, 8);

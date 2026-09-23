@@ -3,13 +3,15 @@ import type { Request, Response } from "express";
 import {
   cancelOrder,
   createOrder,
+  getAdminOrderById,
   getOrderById,
+  listAdminOrders,
   listOrders,
   updateOrderStatus,
 } from "../services/order.service";
 import { AppError } from "../utils/AppError";
 import { paramId } from "../utils/params";
-import type { OrderListQuery } from "../validators/order.validators";
+import type { AdminOrderListQuery, OrderListQuery } from "../validators/order.validators";
 
 const requireUserId = (req: Request): string => {
   if (!req.user) {
@@ -35,6 +37,16 @@ export const getById = async (req: Request, res: Response): Promise<void> => {
 
 export const cancel = async (req: Request, res: Response): Promise<void> => {
   const data = await cancelOrder(requireUserId(req), paramId(req.params.id));
+  res.status(200).json({ success: true, data });
+};
+
+export const listAdmin = async (req: Request, res: Response): Promise<void> => {
+  const { items, pagination } = await listAdminOrders(req.query as unknown as AdminOrderListQuery);
+  res.status(200).json({ success: true, data: items, pagination });
+};
+
+export const getAdminById = async (req: Request, res: Response): Promise<void> => {
+  const data = await getAdminOrderById(paramId(req.params.id));
   res.status(200).json({ success: true, data });
 };
 
