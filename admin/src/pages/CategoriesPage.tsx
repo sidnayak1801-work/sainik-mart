@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { createCategory, deactivateCategory, listCategories, updateCategory } from "@/api/categories";
 import { ApiError } from "@/api/client";
@@ -30,16 +30,21 @@ export const CategoriesPage = () => {
   const [saving, setSaving] = useState(false);
   const [pending, setPending] = useState<Category | null>(null);
   const [working, setWorking] = useState(false);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
-      setItems(await listCategories());
+      const next = await listCategories();
+      if (id !== requestId.current) return;
+      setItems(next);
     } catch (err) {
+      if (id !== requestId.current) return;
       setError(errorMessage(err));
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, []);
 

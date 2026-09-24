@@ -159,41 +159,45 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     throw new AppError("Address not found", 404);
   }
 
-  const cart = await prisma.cart.findFirst({
-    where: { userId },
-    include: cartInclude,
-  });
-
-  if (!cart || cart.items.length === 0) {
-    throw new AppError("Cart is empty", 400);
-  }
-
-  const lines = cart.items.map((item) => {
-    if (item.quantity <= 0) {
-      throw new AppError("Invalid quantity", 400);
-    }
-    assertPurchasable(item.product);
-    if (item.quantity > item.product.stockQuantity) {
-      throw new AppError("Insufficient stock", 400);
-    }
-
-    const price = unitPrice(item.product);
-    const total = price.mul(item.quantity);
-    return {
-      productId: item.product.id,
-      productName: item.product.name,
-      quantity: item.quantity,
-      price,
-      total,
-    };
-  });
-
-  const subtotal = lines.reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0));
-  const deliveryFee = new Prisma.Decimal(0);
-  const discount = new Prisma.Decimal(0);
-  const totalAmount = subtotal.add(deliveryFee).sub(discount);
-
   const created = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`
+      SELECT id FROM carts WHERE user_id = CAST(${userId} AS uuid) FOR UPDATE
+    `;
+
+    const cart = await tx.cart.findFirst({
+      where: { userId },
+      include: cartInclude,
+    });
+
+    if (!cart || cart.items.length === 0) {
+      throw new AppError("Cart is empty", 400);
+    }
+
+    const lines = cart.items.map((item) => {
+      if (item.quantity <= 0) {
+        throw new AppError("Invalid quantity", 400);
+      }
+      assertPurchasable(item.product);
+      if (item.quantity > item.product.stockQuantity) {
+        throw new AppError("Insufficient stock", 400);
+      }
+
+      const price = unitPrice(item.product);
+      const total = price.mul(item.quantity);
+      return {
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        price,
+        total,
+      };
+    });
+
+    const subtotal = lines.reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0));
+    const deliveryFee = new Prisma.Decimal(0);
+    const discount = new Prisma.Decimal(0);
+    const totalAmount = subtotal.add(deliveryFee).sub(discount);
+
     const order = await tx.order.create({
       data: {
         userId,

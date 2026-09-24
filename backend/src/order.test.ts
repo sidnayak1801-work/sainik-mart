@@ -399,6 +399,39 @@ test("sums multiple products and prevents oversell on last unit", async () => {
   assert.equal(await prisma.order.count({ where: { userId: { in: [customerAId, customerBId] }, items: { some: { productId: productSingleId } } } }), 1);
 });
 
+test("same user concurrent checkout creates only one order", async () => {
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+
+  const product = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day19 ${stamp} Concurrent`,
+    description: "Concurrent checkout",
+    price: 20,
+    stockQuantity: 10,
+    categoryId,
+  });
+  assert.equal(product.status, 201);
+  const productId = (product.body.data as { id: string }).id;
+  assert.equal((await addToCart(customerAToken, productId, 1)).status, 201);
+
+  const before = await prisma.order.count({ where: { userId: customerAId } });
+  const [first, second] = await Promise.all([
+    authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId }),
+    authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId }),
+  ]);
+
+  const statuses = [first.status, second.status].sort();
+  assert.deepEqual(statuses, [201, 400]);
+  const failed = first.status === 400 ? first : second;
+  assert.equal((failed.body as { message?: string }).message, "Cart is empty");
+  assert.equal(await prisma.order.count({ where: { userId: customerAId } }), before + 1);
+  assert.equal(
+    await prisma.order.count({
+      where: { userId: customerAId, items: { some: { productId } } },
+    }),
+    1,
+  );
+});
+
 test("rejects inactive category and blocks deleting an address used by an order", async () => {
   const category = await authJson(adminToken, "POST", "/api/categories", {
     name: `Day19 ${stamp} Inactive Cat`,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -56,6 +56,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
   const [addressError, setAddressError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const loadCart = useCallback(async () => {
     setCartError(null);
@@ -144,8 +145,8 @@ export function CheckoutScreen({ navigation, route }: Props) {
   const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
   const items = cart?.items ?? [];
   const isEmptyCart = !loading && !cartError && items.length === 0;
-  const canReview = !loading && !cartError && items.length > 0;
-  const hasAddressSection = canReview && !addressError;
+  const canReview = !loading && !cartError && !addressError && items.length > 0;
+  const hasAddressSection = canReview;
   const noAddresses = hasAddressSection && addresses.length === 0;
   const canPlaceOrder = canReview && Boolean(selectedAddress) && !submitting;
 
@@ -154,7 +155,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
   };
 
   const onPlaceOrder = async () => {
-    if (submitting) return;
+    if (submitting || submittingRef.current) return;
     if (!cart || cart.items.length === 0) {
       setSubmitError("Your cart is empty. Add items before placing an order.");
       return;
@@ -164,6 +165,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -172,6 +174,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
     } catch (err) {
       setSubmitError(mapOrderError(err));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

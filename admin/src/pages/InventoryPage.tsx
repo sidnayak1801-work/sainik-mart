@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { listCategories } from "@/api/categories";
 import { ApiError } from "@/api/client";
@@ -42,8 +42,10 @@ export const InventoryPage = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -57,13 +59,15 @@ export const InventoryPage = () => {
         }),
         listCategories(),
       ]);
+      if (id !== requestId.current) return;
       setItems(productResult.items);
       setPagination(productResult.pagination);
       setCategories(categoryResult);
     } catch (err) {
+      if (id !== requestId.current) return;
       setError(errorMessage(err));
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, [page, debouncedSearch, categoryId, stockStatus]);
 

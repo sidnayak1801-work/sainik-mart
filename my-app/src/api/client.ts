@@ -45,6 +45,12 @@ const userMessageForStatus = (status: number, data: unknown): string => {
   if (status === 403) return "You do not have access to this action.";
   if (status === 404) return "The requested resource was not found.";
   if (status === 409) return "An account with this email or phone already exists.";
+  if (status === 501) {
+    if (isErrorBody(data) && typeof data.message === "string" && isSafeUserMessage(data.message)) {
+      return data.message;
+    }
+    return "Something went wrong. Please try again.";
+  }
   if (status >= 500) return "Something went wrong. Please try again.";
 
   if (isErrorBody(data) && typeof data.message === "string" && isSafeUserMessage(data.message)) {

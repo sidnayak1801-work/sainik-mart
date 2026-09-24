@@ -18,6 +18,8 @@ const unitPrice = (item: CartLineItem): number => {
 };
 
 export function CartItemRow({ item, disabled = false, onIncrease, onDecrease, onRemove }: CartItemRowProps) {
+  const increaseDisabled = disabled || item.quantity >= item.product.stockQuantity;
+
   return (
     <View style={[styles.card, disabled ? styles.disabled : null]}>
       {item.product.imageUrl ? (
@@ -45,7 +47,7 @@ export function CartItemRow({ item, disabled = false, onIncrease, onDecrease, on
             accessibilityRole="button"
             accessibilityLabel="Increase quantity"
             onPress={onIncrease}
-            disabled={disabled}
+            disabled={increaseDisabled}
             style={styles.stepButton}
           >
             <Text style={styles.stepLabel}>+</Text>

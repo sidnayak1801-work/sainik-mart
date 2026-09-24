@@ -80,6 +80,7 @@ export function CartScreen({ navigation }: Props) {
   };
 
   const onIncrease = (item: CartLineItem) => {
+    if (item.quantity >= item.product.stockQuantity) return;
     void mutate(item.id, () => updateCartItem(item.id, item.quantity + 1));
   };
 

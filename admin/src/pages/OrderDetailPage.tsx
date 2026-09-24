@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "@/api/client";
@@ -27,20 +27,24 @@ export const OrderDetailPage = () => {
   const [nextStatus, setNextStatus] = useState<OrderStatus | "">("");
   const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
   const [working, setWorking] = useState(false);
+  const requestId = useRef(0);
 
   const load = useCallback(async () => {
+    const request = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
       const data = await getOrder(id);
+      if (request !== requestId.current) return;
       setOrder(data);
       const next = nextOrderStatuses(data.orderStatus);
       setNextStatus(next[0] ?? "");
     } catch (err) {
+      if (request !== requestId.current) return;
       setOrder(null);
       setError(errorMessage(err));
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   }, [id]);
 
