@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import { AppNavigator } from "@/navigation/AppNavigator";
 import { theme } from "@/theme";
 
@@ -28,10 +29,12 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <AuthProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <StatusBar style="auto" />
-            <AppNavigator />
-          </NavigationContainer>
+          <CartProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <StatusBar style="auto" />
+              <AppNavigator />
+            </NavigationContainer>
+          </CartProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

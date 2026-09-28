@@ -4,7 +4,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { BrandLogo } from "@/components/BrandLogo";
-import { Button } from "@/components/Button";
+import { MenuRow } from "@/components/MenuRow";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
@@ -17,36 +17,49 @@ type Props = CompositeScreenProps<
 >;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
   return (
-    <Screen>
-      <View style={styles.brand}>
+    <Screen padded={false}>
+      <View style={styles.hero}>
         <BrandLogo size="sm" />
         <Text style={styles.tagline}>{APP_TAGLINE}</Text>
+        {user ? (
+          <>
+            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.meta}>{user.email}</Text>
+            <Text style={styles.meta}>{user.phone}</Text>
+          </>
+        ) : (
+          <Text style={styles.meta}>Browse now. Sign in when you check out.</Text>
+        )}
       </View>
-      <Text style={styles.title}>Profile</Text>
-      {user ? (
-        <>
-          <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.meta}>{user.email}</Text>
-          <Text style={styles.meta}>{user.phone}</Text>
-        </>
-      ) : (
-        <Text style={styles.subtitle}>You are signed in.</Text>
-      )}
-      <Button title="My Orders" onPress={() => navigation.navigate("Orders")} />
-      <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
-      <Button title="Sign out" onPress={() => void logout()} variant="ghost" />
+      <View style={styles.menu}>
+        {isAuthenticated ? (
+          <>
+            <MenuRow label="My Orders" onPress={() => navigation.navigate("Orders")} />
+            <MenuRow label="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
+            <MenuRow label="Sign out" danger onPress={() => void logout()} />
+          </>
+        ) : (
+          <>
+            <MenuRow label="Sign in" onPress={() => navigation.navigate("Login", { redirect: "Profile" })} />
+            <MenuRow label="Create account" onPress={() => navigation.navigate("Register", { redirect: "Profile" })} />
+          </>
+        )}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  brand: {
+  hero: {
     alignItems: "center",
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    gap: theme.spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   tagline: {
     color: theme.colors.gold,
@@ -54,23 +67,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1.2,
     textTransform: "uppercase",
-  },
-  title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
-    color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   name: {
     fontSize: theme.typography.heading,
-    fontWeight: "600",
+    fontWeight: "700",
     color: theme.colors.text,
   },
   meta: {
     color: theme.colors.textSecondary,
+    fontSize: theme.typography.body,
+    textAlign: "center",
+    paddingHorizontal: theme.spacing.md,
   },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.lg,
+  menu: {
+    marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
   },
 });

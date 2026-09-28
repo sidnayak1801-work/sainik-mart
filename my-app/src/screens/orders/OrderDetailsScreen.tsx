@@ -72,9 +72,11 @@ export function OrderDetailsScreen({ route }: Props) {
         <>
           <Text style={styles.title}>Order #{shortOrderId(order.id)}</Text>
           <Text style={styles.date}>{order.createdAt ? formatDateTime(order.createdAt) : ""}</Text>
-          <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
-            {formatOrderStatus(order.orderStatus)}
-          </Text>
+          <View style={[styles.statusPill, cancelled ? styles.cancelledPill : null]}>
+            <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
+              {formatOrderStatus(order.orderStatus)}
+            </Text>
+          </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Items</Text>
@@ -114,6 +116,16 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: theme.typography.body,
   },
+  statusPill: {
+    alignSelf: "flex-start",
+    backgroundColor: theme.colors.muted,
+    borderRadius: theme.radius.button,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  cancelledPill: {
+    backgroundColor: "#F8E8E8",
+  },
   status: {
     color: theme.colors.primary,
     fontSize: theme.typography.subheading,
@@ -124,6 +136,9 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: theme.typography.heading,

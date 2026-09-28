@@ -20,9 +20,11 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
     >
       <View style={styles.top}>
         <Text style={styles.id}>Order #{shortOrderId(order.id)}</Text>
-        <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
-          {formatOrderStatus(order.orderStatus)}
-        </Text>
+        <View style={[styles.statusPill, cancelled ? styles.cancelledPill : null]}>
+          <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
+            {formatOrderStatus(order.orderStatus)}
+          </Text>
+        </View>
       </View>
       <Text style={styles.date}>{formatDateTime(order.createdAt)}</Text>
       <View style={styles.bottom}>
@@ -62,6 +64,15 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.typography.body,
     fontWeight: "700",
+  },
+  statusPill: {
+    backgroundColor: theme.colors.muted,
+    borderRadius: theme.radius.button,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  cancelledPill: {
+    backgroundColor: "#F8E8E8",
   },
   status: {
     color: theme.colors.primary,

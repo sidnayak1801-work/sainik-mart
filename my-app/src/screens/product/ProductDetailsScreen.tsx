@@ -3,10 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { addCartItem } from "@/api/cart";
 import { ApiError } from "@/api/client";
 import { getProduct } from "@/api/products";
-import { Button } from "@/components/Button";
+import { CartQtyControls } from "@/components/CartQtyControls";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
@@ -18,13 +17,11 @@ import { cloudinaryImage } from "@/utils/image";
 
 type Props = NativeStackScreenProps<MainStackParamList, "ProductDetails">;
 
-export function ProductDetailsScreen({ navigation, route }: Props) {
+export function ProductDetailsScreen({ route }: Props) {
   const { productId } = route.params;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -45,22 +42,22 @@ export function ProductDetailsScreen({ navigation, route }: Props) {
     product?.discountPrice !== null && product?.discountPrice !== undefined ? product.discountPrice : null;
   const outOfStock = product?.stockQuantity !== undefined && product.stockQuantity <= 0;
 
-  const onAddToCart = async () => {
-    if (!product || adding || outOfStock) return;
-    setActionError(null);
-    setAdding(true);
-    try {
-      await addCartItem(product.id, 1);
-      navigation.navigate("MainTabs", { screen: "Cart" });
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Unable to add this product to your cart.");
-    } finally {
-      setAdding(false);
-    }
-  };
-
   return (
-    <Screen>
+    <Screen
+      footer={
+        product ? (
+          <View style={styles.footer}>
+            <View>
+              <Text style={styles.footerLabel}>{outOfStock ? "Out of stock" : "Price"}</Text>
+              <Text style={styles.footerPrice}>₹{discounted ?? product.price}</Text>
+            </View>
+            <View style={styles.footerAction}>
+              <CartQtyControls product={product} />
+            </View>
+          </View>
+        ) : null
+      }
+    >
       {loading ? <Loading /> : null}
       {error ? (
         <>
@@ -95,13 +92,6 @@ export function ProductDetailsScreen({ navigation, route }: Props) {
             </Text>
           ) : null}
           {product.description ? <Text style={styles.body}>{product.description}</Text> : null}
-          {actionError ? <ErrorMessage message={actionError} /> : null}
-          <Button
-            title="Add to Cart"
-            onPress={() => void onAddToCart()}
-            loading={adding}
-            disabled={outOfStock}
-          />
         </>
       ) : null}
     </Screen>
@@ -110,7 +100,7 @@ export function ProductDetailsScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   image: {
-    height: 220,
+    height: 260,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.muted,
     width: "100%",
@@ -142,5 +132,29 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.typography.body,
     lineHeight: 22,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  footerLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
+  },
+  footerPrice: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.heading,
+    fontWeight: "700",
+  },
+  footerAction: {
+    flex: 1,
+    maxWidth: 200,
   },
 });

@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, View } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { listCategories } from "@/api/categories";
 import { ApiError } from "@/api/client";
+import { CategoryTile } from "@/components/CategoryTile";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { SectionHeader } from "@/components/SectionHeader";
+import { StoreHeader } from "@/components/StoreHeader";
 import { theme } from "@/theme";
 import type { Category } from "@/types/models";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
@@ -45,50 +48,39 @@ export function CategoriesScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen refreshing={refreshing} onRefresh={() => void onRefresh()}>
-      <Text style={styles.title}>Categories</Text>
-      {loading ? <Loading /> : null}
-      {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
-      {!loading && !error && categories.length === 0 ? (
-        <EmptyState title="No categories yet" description="Categories will appear here when the catalog is ready." />
-      ) : null}
-      {categories.map((category) => (
-        <Pressable
-          key={category.id}
-          style={styles.row}
-          onPress={() =>
-            navigation.navigate("ProductList", { categoryId: category.id, title: category.name })
-          }
-        >
-          <Text style={styles.name}>{category.name}</Text>
-          <Text style={styles.hint}>View products</Text>
-        </Pressable>
-      ))}
+    <Screen padded={false} refreshing={refreshing} onRefresh={() => void onRefresh()}>
+      <StoreHeader />
+      <View style={styles.body}>
+        <SectionHeader title="All categories" />
+        {loading ? <Loading /> : null}
+        {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
+        {!loading && !error && categories.length === 0 ? (
+          <EmptyState title="No categories yet" description="Categories will appear here when the catalog is ready." />
+        ) : (
+          <View style={styles.grid}>
+            {categories.map((category) => (
+              <CategoryTile
+                key={category.id}
+                category={category}
+                onPress={() =>
+                  navigation.navigate("ProductList", { categoryId: category.id, title: category.name })
+                }
+              />
+            ))}
+          </View>
+        )}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  row: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    borderRadius: theme.radius.md,
+  body: {
     padding: theme.spacing.md,
-    gap: theme.spacing.xs,
+    gap: theme.spacing.md,
   },
-  name: {
-    color: theme.colors.text,
-    fontSize: theme.typography.body,
-    fontWeight: "600",
-  },
-  hint: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.typography.caption,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
 });

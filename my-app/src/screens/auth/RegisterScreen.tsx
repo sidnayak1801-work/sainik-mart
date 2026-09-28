@@ -9,10 +9,12 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
 import { toAuthErrorMessage, useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { continueAfterAuth } from "@/navigation/authRedirect";
 import { theme } from "@/theme";
-import type { AuthStackParamList } from "@/types/navigation";
+import type { MainStackParamList } from "@/types/navigation";
 
-type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
+type Props = NativeStackScreenProps<MainStackParamList, "Register">;
 
 type FieldErrors = {
   name?: string;
@@ -61,8 +63,10 @@ const fieldErrorsFromApi = (error: unknown): FieldErrors | null => {
   return Object.keys(next).length > 0 ? next : null;
 };
 
-export function RegisterScreen({ navigation }: Props) {
+export function RegisterScreen({ navigation, route }: Props) {
   const { register } = useAuth();
+  const { syncAfterAuth } = useCart();
+  const redirect = route.params?.redirect;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -100,6 +104,8 @@ export function RegisterScreen({ navigation }: Props) {
         phone: normalizePhone(phone),
         password,
       });
+      await syncAfterAuth();
+      continueAfterAuth(navigation, redirect);
     } catch (error) {
       const apiFields = fieldErrorsFromApi(error);
       if (apiFields) {
@@ -175,7 +181,7 @@ export function RegisterScreen({ navigation }: Props) {
       <Button title="Register" onPress={() => void onSubmit()} loading={submitting} disabled={submitting} />
       <Button
         title="Already have an account? Login"
-        onPress={() => navigation.navigate("Login")}
+        onPress={() => navigation.navigate("Login", redirect ? { redirect } : undefined)}
         variant="ghost"
       />
     </Screen>

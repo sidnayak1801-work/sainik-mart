@@ -14,10 +14,13 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <View style={styles.body}>
-        <Text style={styles.title}>Order placed</Text>
-        <Text style={styles.id}>Order {order.id}</Text>
-        <Text style={styles.status}>{order.orderStatus}</Text>
-        <Text style={styles.total}>₹{order.totalAmount}</Text>
+        <View style={styles.card}>
+          <Text style={styles.eyebrow}>Thank you</Text>
+          <Text style={styles.title}>Order placed</Text>
+          <Text style={styles.id}>Order {order.id}</Text>
+          <Text style={styles.status}>{order.orderStatus}</Text>
+          <Text style={styles.total}>₹{order.totalAmount}</Text>
+        </View>
       </View>
       <Button
         title="Continue Shopping"
@@ -25,6 +28,16 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
           navigation.reset({
             index: 0,
             routes: [{ name: "MainTabs", params: { screen: "Home" } }],
+          })
+        }
+      />
+      <Button
+        title="View orders"
+        variant="ghost"
+        onPress={() =>
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "MainTabs", params: { screen: "Orders" } }],
           })
         }
       />
@@ -36,8 +49,20 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     justifyContent: "center",
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
     alignItems: "center",
     gap: theme.spacing.sm,
+  },
+  eyebrow: {
+    color: theme.colors.gold,
+    fontSize: theme.typography.caption,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
   },
   title: {
     fontSize: theme.typography.title,

@@ -8,13 +8,17 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
 import { toAuthErrorMessage, useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { continueAfterAuth } from "@/navigation/authRedirect";
 import { theme } from "@/theme";
-import type { AuthStackParamList } from "@/types/navigation";
+import type { MainStackParamList } from "@/types/navigation";
 
-type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
+type Props = NativeStackScreenProps<MainStackParamList, "Login">;
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation, route }: Props) {
   const { login } = useAuth();
+  const { syncAfterAuth } = useCart();
+  const redirect = route.params?.redirect;
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
@@ -37,6 +41,8 @@ export function LoginScreen({ navigation }: Props) {
     setSubmitting(true);
     try {
       await login({ identifier: identifier.trim(), password });
+      await syncAfterAuth();
+      continueAfterAuth(navigation, redirect);
     } catch (error) {
       setFormError(toAuthErrorMessage(error));
     } finally {
@@ -76,7 +82,7 @@ export function LoginScreen({ navigation }: Props) {
       <Button title="Login" onPress={() => void onSubmit()} loading={submitting} disabled={submitting} />
       <Button
         title="Don't have an account? Register"
-        onPress={() => navigation.navigate("Register")}
+        onPress={() => navigation.navigate("Register", redirect ? { redirect } : undefined)}
         variant="ghost"
       />
     </Screen>

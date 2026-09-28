@@ -5,7 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { deleteCartItem, getCart, updateCartItem } from "@/api/cart";
+import { deleteCartItem, getCart, updateCartItem } from "@/services/cartService";
 import { ApiError } from "@/api/client";
 import { Button } from "@/components/Button";
 import { CartItemRow } from "@/components/CartItemRow";
@@ -13,6 +13,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { requireAuth } from "@/navigation/authRedirect";
 import { theme } from "@/theme";
 import type { Cart, CartLineItem } from "@/types/models";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
@@ -23,6 +26,8 @@ type Props = CompositeScreenProps<
 >;
 
 export function CartScreen({ navigation }: Props) {
+  const { isAuthenticated } = useAuth();
+  const { applyCart } = useCart();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,11 +36,13 @@ export function CartScreen({ navigation }: Props) {
   const load = useCallback(async () => {
     setError(null);
     try {
-      setCart(await getCart());
+      const next = await getCart();
+      setCart(next);
+      applyCart(next);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to load your cart.");
     }
-  }, []);
+  }, [applyCart]);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,6 +54,7 @@ export function CartScreen({ navigation }: Props) {
           const next = await getCart();
           if (!cancelled) {
             setCart(next);
+            applyCart(next);
           }
         } catch (err) {
           if (!cancelled) {
@@ -63,7 +71,7 @@ export function CartScreen({ navigation }: Props) {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [applyCart]),
   );
 
   const mutate = async (itemId: string, action: () => Promise<Cart>) => {
@@ -71,7 +79,9 @@ export function CartScreen({ navigation }: Props) {
     setUpdatingItemId(itemId);
     setError(null);
     try {
-      setCart(await action());
+      const next = await action();
+      setCart(next);
+      applyCart(next);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to update your cart.");
     } finally {
@@ -100,11 +110,36 @@ export function CartScreen({ navigation }: Props) {
     navigation.navigate("Home");
   };
 
+  const goCheckout = () => {
+    if (!requireAuth(navigation, isAuthenticated, "Checkout")) return;
+    navigation.navigate("Checkout");
+  };
+
+  const goAddresses = () => {
+    if (!requireAuth(navigation, isAuthenticated, "AddressList")) return;
+    navigation.navigate("AddressList");
+  };
+
   const items = cart?.items ?? [];
   const isEmpty = !loading && !error && items.length === 0;
 
   return (
-    <Screen scroll={false}>
+    <Screen
+      scroll={false}
+      footer={
+        !loading && items.length > 0 ? (
+          <View style={styles.bar}>
+            <View>
+              <Text style={styles.barLabel}>Subtotal</Text>
+              <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>
+            </View>
+            <View style={styles.barAction}>
+              <Button title="Proceed to Checkout" onPress={goCheckout} />
+            </View>
+          </View>
+        ) : null
+      }
+    >
       <Text style={styles.title}>My Cart</Text>
       {loading ? <Loading /> : null}
       {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
@@ -115,8 +150,8 @@ export function CartScreen({ navigation }: Props) {
             title="Your cart is empty"
             description="Add some products to your cart"
           />
-          <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
           <Button title="Continue Shopping" onPress={goShopping} />
+          <Button title="Delivery addresses" onPress={goAddresses} variant="ghost" />
         </View>
       ) : null}
       {!loading && items.length > 0 ? (
@@ -135,14 +170,9 @@ export function CartScreen({ navigation }: Props) {
           )}
           contentContainerStyle={styles.list}
           ListFooterComponent={
-            <View style={styles.footer}>
-              <View style={styles.subtotalRow}>
-                <Text style={styles.subtotalLabel}>Subtotal</Text>
-                <Text style={styles.subtotalValue}>₹{cart?.subtotal ?? 0}</Text>
-              </View>
-              <Button title="Proceed to Checkout" onPress={() => navigation.navigate("Checkout")} />
-              <Button title="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
-              <Button title="Continue Shopping" onPress={goShopping} />
+            <View style={styles.secondary}>
+              <Button title="Continue Shopping" onPress={goShopping} variant="ghost" />
+              <Button title="Delivery addresses" onPress={goAddresses} variant="ghost" />
             </View>
           }
         />
@@ -169,23 +199,32 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
     paddingBottom: theme.spacing.lg,
   },
-  footer: {
-    gap: theme.spacing.md,
-    paddingTop: theme.spacing.md,
+  secondary: {
+    gap: theme.spacing.sm,
+    paddingTop: theme.spacing.sm,
   },
-  subtotalRow: {
+  bar: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
-  subtotalLabel: {
-    fontSize: theme.typography.subheading,
-    color: theme.colors.text,
-    fontWeight: "600",
+  barLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
   },
-  subtotalValue: {
-    fontSize: theme.typography.heading,
+  barValue: {
     color: theme.colors.primary,
+    fontSize: theme.typography.heading,
     fontWeight: "700",
+  },
+  barAction: {
+    flex: 1,
+    maxWidth: 220,
   },
 });

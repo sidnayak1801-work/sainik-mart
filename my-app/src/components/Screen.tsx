@@ -9,32 +9,38 @@ type ScreenProps = {
   scroll?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  padded?: boolean;
+  footer?: ReactNode;
 };
 
-export function Screen({ children, scroll = true, refreshing = false, onRefresh }: ScreenProps) {
+export function Screen({
+  children,
+  scroll = true,
+  refreshing = false,
+  onRefresh,
+  padded = true,
+  footer,
+}: ScreenProps) {
+  const contentStyle = [styles.content, !padded && styles.contentFlush];
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={styles.content}
+      contentContainerStyle={contentStyle}
       keyboardShouldPersistTaps="handled"
       refreshControl={
-        onRefresh ? (
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        ) : undefined
+        onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
       }
     >
       {children}
     </ScrollView>
   ) : (
-    <View style={styles.content}>{children}</View>
+    <View style={contentStyle}>{children}</View>
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         {content}
+        {footer}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -52,5 +58,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: theme.spacing.md,
     gap: theme.spacing.md,
+  },
+  contentFlush: {
+    padding: 0,
+    gap: 0,
   },
 });

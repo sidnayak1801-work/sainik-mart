@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { StyleSheet, View } from "react-native";
 
 const SIZES = {
+  xs: 36,
   sm: 56,
   md: 88,
   lg: 128,

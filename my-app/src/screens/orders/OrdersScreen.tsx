@@ -13,6 +13,7 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
 import { OrderCard } from "@/components/OrderCard";
 import { Screen } from "@/components/Screen";
+import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
 import type { OrderSummary } from "@/types/models";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
@@ -23,6 +24,7 @@ type Props = CompositeScreenProps<
 >;
 
 export function OrdersScreen({ navigation }: Props) {
+  const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,6 +42,13 @@ export function OrdersScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isAuthenticated) {
+        setOrders([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       let cancelled = false;
 
       const run = async () => {
@@ -64,7 +73,7 @@ export function OrdersScreen({ navigation }: Props) {
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [isAuthenticated]),
   );
 
   const onRefresh = async () => {
@@ -78,9 +87,25 @@ export function OrdersScreen({ navigation }: Props) {
   return (
     <Screen scroll={false}>
       <Text style={styles.title}>My Orders</Text>
-      {loading ? <Loading /> : null}
+      <Text style={styles.subtitle}>Track your recent grocery orders</Text>
+      {isAuthenticated && loading ? <Loading /> : null}
       {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
-      {isEmpty ? (
+      {!isAuthenticated ? (
+        <View style={styles.empty}>
+          <EmptyState
+            centered
+            title="Sign in to see orders"
+            description="Log in or create an account to track your grocery orders."
+          />
+          <Button title="Login" onPress={() => navigation.navigate("Login", { redirect: "Orders" })} />
+          <Button
+            title="Register"
+            variant="ghost"
+            onPress={() => navigation.navigate("Register", { redirect: "Orders" })}
+          />
+        </View>
+      ) : null}
+      {isAuthenticated && isEmpty ? (
         <View style={styles.empty}>
           <EmptyState
             centered
@@ -116,6 +141,11 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.title,
     fontWeight: "700",
     color: theme.colors.text,
+  },
+  subtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.body,
+    marginBottom: theme.spacing.xs,
   },
   empty: {
     flex: 1,

@@ -2,9 +2,13 @@ import type { NavigatorScreenParams } from "@react-navigation/native";
 
 import type { Address, CreatedOrder } from "@/types/models";
 
+export type AuthRedirect = "Checkout" | "Orders" | "AddressList" | "Profile";
+
+export type AuthScreenParams = { redirect?: AuthRedirect } | undefined;
+
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Login: AuthScreenParams;
+  Register: AuthScreenParams;
 };
 
 export type MainTabParamList = {
@@ -21,10 +25,16 @@ export type MainStackParamList = {
   ProductDetails: { productId: string };
   OrderDetails: { orderId: string };
   Checkout: { selectedAddressId?: string } | undefined;
-  AddressList: { selectForCheckout?: boolean; selectedAddressId?: string } | undefined;
+  AddressList: {
+    selectForCheckout?: boolean;
+    selectForLocation?: boolean;
+    selectedAddressId?: string;
+  } | undefined;
   AddAddress: undefined;
   EditAddress: { addressId: string; address: Address };
   OrderConfirmation: { order: CreatedOrder };
+  Login: AuthScreenParams;
+  Register: AuthScreenParams;
 };
 
 export type RootStackParamList = AuthStackParamList & MainStackParamList;

@@ -4,11 +4,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
 
-import { AuthNavigator } from "./AuthNavigator";
 import { MainNavigator } from "./MainNavigator";
 
 export function AppNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -19,7 +18,7 @@ export function AppNavigator() {
     );
   }
 
-  return isAuthenticated ? <MainNavigator /> : <AuthNavigator />;
+  return <MainNavigator />;
 }
 
 const styles = StyleSheet.create({

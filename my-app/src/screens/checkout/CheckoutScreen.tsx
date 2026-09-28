@@ -4,9 +4,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { listAddresses } from "@/api/addresses";
-import { getCart } from "@/api/cart";
+import { getCart } from "@/services/cartService";
 import { ApiError } from "@/api/client";
 import { createOrder } from "@/api/orders";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { requireAuth } from "@/navigation/authRedirect";
+import { getSelectedAddressId } from "@/storage/addressStorage";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
@@ -47,6 +51,8 @@ const unitPrice = (item: CartLineItem): number => {
 };
 
 export function CheckoutScreen({ navigation, route }: Props) {
+  const { isAuthenticated } = useAuth();
+  const { refreshCart } = useCart();
   const routeAddressId = route.params?.selectedAddressId;
   const [cart, setCart] = useState<Cart | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -72,8 +78,9 @@ export function CheckoutScreen({ navigation, route }: Props) {
     try {
       const next = await listAddresses();
       setAddresses(next);
+      const stored = await getSelectedAddressId();
       setSelectedAddressId((current) => {
-        const preferred = routeAddressId ?? current;
+        const preferred = routeAddressId ?? stored ?? current;
         if (preferred && next.some((address) => address.id === preferred)) {
           return preferred;
         }
@@ -86,6 +93,11 @@ export function CheckoutScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isAuthenticated) {
+        navigation.replace("Login", { redirect: "Checkout" });
+        return;
+      }
+
       let cancelled = false;
 
       const run = async () => {
@@ -114,8 +126,9 @@ export function CheckoutScreen({ navigation, route }: Props) {
           if (addressResult.ok) {
             const next = addressResult.data;
             setAddresses(next);
+            const stored = await getSelectedAddressId();
             setSelectedAddressId((current) => {
-              const preferred = routeAddressId ?? current;
+              const preferred = routeAddressId ?? stored ?? current;
               if (preferred && next.some((address) => address.id === preferred)) {
                 return preferred;
               }
@@ -139,7 +152,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [routeAddressId]),
+    }, [isAuthenticated, navigation, routeAddressId]),
   );
 
   const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
@@ -155,6 +168,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
   };
 
   const onPlaceOrder = async () => {
+    if (!requireAuth(navigation, isAuthenticated, "Checkout")) return;
     if (submitting || submittingRef.current) return;
     if (!cart || cart.items.length === 0) {
       setSubmitError("Your cart is empty. Add items before placing an order.");
@@ -170,6 +184,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
     setSubmitError(null);
     try {
       const order = await createOrder(selectedAddressId);
+      await refreshCart();
       navigation.replace("OrderConfirmation", { order });
     } catch (err) {
       setSubmitError(mapOrderError(err));
@@ -180,7 +195,26 @@ export function CheckoutScreen({ navigation, route }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        canReview && selectedAddress ? (
+          <View style={styles.bar}>
+            <View>
+              <Text style={styles.barLabel}>Total</Text>
+              <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>
+            </View>
+            <View style={styles.barAction}>
+              <Button
+                title="PLACE ORDER"
+                onPress={() => void onPlaceOrder()}
+                loading={submitting}
+                disabled={!canPlaceOrder}
+              />
+            </View>
+          </View>
+        ) : null
+      }
+    >
       <Text style={styles.title}>Checkout</Text>
 
       {loading ? <Loading /> : null}
@@ -254,15 +288,6 @@ export function CheckoutScreen({ navigation, route }: Props) {
       ) : null}
 
       {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
-
-      {canReview && selectedAddress ? (
-        <Button
-          title="PLACE ORDER"
-          onPress={() => void onPlaceOrder()}
-          loading={submitting}
-          disabled={!canPlaceOrder}
-        />
-      ) : null}
     </Screen>
   );
 }
@@ -351,5 +376,29 @@ const styles = StyleSheet.create({
   submitError: {
     color: theme.colors.danger,
     fontSize: theme.typography.body,
+  },
+  bar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  barLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
+  },
+  barValue: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.heading,
+    fontWeight: "700",
+  },
+  barAction: {
+    flex: 1,
+    maxWidth: 220,
   },
 });

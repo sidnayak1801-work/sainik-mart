@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { getMe, login as loginRequest, register as registerRequest } from "@/api/auth";
 import { ApiError, setOnUnauthorized } from "@/api/client";
+import { removeSelectedAddressId } from "@/storage/addressStorage";
 import { getToken, removeToken, setToken } from "@/storage/authStorage";
 import type { AuthState, LoginRequest, RegisterRequest, User } from "@/types/auth";
 
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await removeToken();
+    await removeSelectedAddressId();
     setUser(null);
   }, []);
 

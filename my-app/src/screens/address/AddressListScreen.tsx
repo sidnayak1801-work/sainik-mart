@@ -5,12 +5,14 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { deleteAddress, listAddresses } from "@/api/addresses";
 import { ApiError } from "@/api/client";
+import { getSelectedAddressId, setSelectedAddressId } from "@/storage/addressStorage";
 import { AddressCard } from "@/components/AddressCard";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/theme";
 import type { Address } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
@@ -18,11 +20,13 @@ import type { MainStackParamList } from "@/types/navigation";
 type Props = NativeStackScreenProps<MainStackParamList, "AddressList">;
 
 export function AddressListScreen({ navigation, route }: Props) {
+  const { isAuthenticated } = useAuth();
   const selectForCheckout = Boolean(route.params?.selectForCheckout);
+  const selectForLocation = Boolean(route.params?.selectForLocation);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+  const [selectedAddressId, setSelectedId] = useState<string | null>(
     route.params?.selectedAddressId ?? null,
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -32,8 +36,9 @@ export function AddressListScreen({ navigation, route }: Props) {
     try {
       const next = await listAddresses();
       setAddresses(next);
-      setSelectedAddressId((current) => {
-        const preferred = route.params?.selectedAddressId ?? current;
+      const stored = await getSelectedAddressId();
+      setSelectedId((current) => {
+        const preferred = route.params?.selectedAddressId ?? stored ?? current;
         if (preferred && next.some((address) => address.id === preferred)) {
           return preferred;
         }
@@ -46,6 +51,11 @@ export function AddressListScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isAuthenticated) {
+        navigation.replace("Login", { redirect: "AddressList" });
+        return;
+      }
+
       let cancelled = false;
 
       const run = async () => {
@@ -54,8 +64,9 @@ export function AddressListScreen({ navigation, route }: Props) {
           const next = await listAddresses();
           if (cancelled) return;
           setAddresses(next);
-          setSelectedAddressId((current) => {
-            const preferred = route.params?.selectedAddressId ?? current;
+          const stored = await getSelectedAddressId();
+          setSelectedId((current) => {
+            const preferred = route.params?.selectedAddressId ?? stored ?? current;
             if (preferred && next.some((address) => address.id === preferred)) {
               return preferred;
             }
@@ -76,10 +87,12 @@ export function AddressListScreen({ navigation, route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [route.params?.selectedAddressId]),
+    }, [isAuthenticated, navigation, route.params?.selectedAddressId]),
   );
 
   const onSelect = (id: string) => {
+    setSelectedId(id);
+    void setSelectedAddressId(id);
     if (selectForCheckout) {
       navigation.navigate({
         name: "Checkout",
@@ -88,7 +101,9 @@ export function AddressListScreen({ navigation, route }: Props) {
       });
       return;
     }
-    setSelectedAddressId(id);
+    if (selectForLocation) {
+      navigation.goBack();
+    }
   };
 
   const confirmDelete = (address: Address) => {
@@ -112,9 +127,12 @@ export function AddressListScreen({ navigation, route }: Props) {
       await deleteAddress(id);
       const next = addresses.filter((address) => address.id !== id);
       setAddresses(next);
-      setSelectedAddressId((current) => {
-        if (current !== id) return current;
-        return next[0]?.id ?? null;
+      setSelectedId((current) => {
+        const nextId = current !== id ? current : next[0]?.id ?? null;
+        if (nextId) {
+          void setSelectedAddressId(nextId);
+        }
+        return nextId;
       });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
