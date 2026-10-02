@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   name: {
     color: theme.colors.text,
     fontSize: theme.typography.body,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
   meta: {
     color: theme.colors.textSecondary,

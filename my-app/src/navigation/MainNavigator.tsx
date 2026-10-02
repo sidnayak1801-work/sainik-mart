@@ -18,6 +18,8 @@ import { OrdersScreen } from "@/screens/orders/OrdersScreen";
 import { ProductDetailsScreen } from "@/screens/product/ProductDetailsScreen";
 import { ProductListScreen } from "@/screens/product/ProductListScreen";
 import { ProfileScreen } from "@/screens/profile/ProfileScreen";
+import { ContactScreen } from "@/screens/info/ContactScreen";
+import { InfoScreen } from "@/screens/info/InfoScreen";
 import { theme } from "@/theme";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
 
@@ -47,8 +49,8 @@ function MainTabs() {
           borderTopColor: theme.colors.border,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: theme.typography.caption,
+          fontWeight: theme.weight.semibold,
         },
       }}
     >
@@ -117,6 +119,10 @@ export function MainNavigator() {
       />
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: "Login" }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Register" }} />
+      <Stack.Screen name="About" component={InfoScreen} options={{ title: "About Sainik Mart" }} />
+      <Stack.Screen name="Terms" component={InfoScreen} options={{ title: "Terms and Conditions" }} />
+      <Stack.Screen name="Privacy" component={InfoScreen} options={{ title: "Privacy Policy" }} />
+      <Stack.Screen name="Contact" component={ContactScreen} options={{ title: "Contact Us" }} />
     </Stack.Navigator>
   );
 }

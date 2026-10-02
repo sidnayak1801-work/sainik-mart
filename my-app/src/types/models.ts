@@ -59,6 +59,14 @@ export type OrderLine = {
   total: number;
 };
 
+export type RazorpayCheckoutPayload = {
+  keyId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  name: string;
+};
+
 export type CreatedOrder = {
   id: string;
   addressId: string;
@@ -70,6 +78,7 @@ export type CreatedOrder = {
   totalAmount: number;
   createdAt?: string;
   items: OrderLine[];
+  razorpay?: RazorpayCheckoutPayload;
 };
 
 export type OrderAddress = {

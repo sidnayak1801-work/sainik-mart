@@ -31,11 +31,11 @@ const styles = StyleSheet.create({
     flex: 1,
     color: theme.colors.text,
     fontSize: theme.typography.subheading,
-    fontWeight: "700",
+    fontWeight: theme.weight.medium,
   },
   seeAll: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.primary,
     fontSize: theme.typography.body,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
 });

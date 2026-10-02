@@ -35,6 +35,10 @@ export type MainStackParamList = {
   OrderConfirmation: { order: CreatedOrder };
   Login: AuthScreenParams;
   Register: AuthScreenParams;
+  About: undefined;
+  Terms: undefined;
+  Privacy: undefined;
+  Contact: undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & MainStackParamList;

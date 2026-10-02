@@ -7,17 +7,21 @@ import { listAddresses } from "@/api/addresses";
 import { getCart } from "@/services/cartService";
 import { ApiError } from "@/api/client";
 import { createOrder } from "@/api/orders";
+import { verifyPayment } from "@/api/payments";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { requireAuth } from "@/navigation/authRedirect";
 import { getSelectedAddressId } from "@/storage/addressStorage";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import { FooterBar } from "@/components/FooterBar";
 import { Loading } from "@/components/Loading";
+import { RazorpayCheckoutModal } from "@/components/RazorpayCheckoutModal";
 import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
-import type { Address, Cart, CartLineItem } from "@/types/models";
+import type { Address, Cart, CartLineItem, CreatedOrder } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<MainStackParamList, "Checkout">;
@@ -43,6 +47,9 @@ const mapOrderError = (err: unknown): string => {
   if (err.status === 404) {
     return "That address is no longer available. Please pick another.";
   }
+  if (combined.includes("payment verification failed")) {
+    return "Payment could not be verified. Please try again from Orders.";
+  }
   return err.message;
 };
 
@@ -50,8 +57,15 @@ const unitPrice = (item: CartLineItem): number => {
   return item.product.discountPrice ?? item.product.price;
 };
 
+const razorpayContact = (phone: string | undefined): string | undefined => {
+  if (!phone) return undefined;
+  const digits = phone.replace(/\D/g, "");
+  const ten = digits.length >= 10 ? digits.slice(-10) : digits;
+  return ten.length === 10 ? ten : undefined;
+};
+
 export function CheckoutScreen({ navigation, route }: Props) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { refreshCart } = useCart();
   const routeAddressId = route.params?.selectedAddressId;
   const [cart, setCart] = useState<Cart | null>(null);
@@ -63,6 +77,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const [payOrder, setPayOrder] = useState<CreatedOrder | null>(null);
 
   const loadCart = useCallback(async () => {
     setCartError(null);
@@ -185,36 +200,69 @@ export function CheckoutScreen({ navigation, route }: Props) {
     try {
       const order = await createOrder(selectedAddressId);
       await refreshCart();
-      navigation.replace("OrderConfirmation", { order });
+      if (!order.razorpay) {
+        setSubmitError("Unable to start payment. Your order is saved under Orders.");
+        submittingRef.current = false;
+        setSubmitting(false);
+        return;
+      }
+      setPayOrder(order);
     } catch (err) {
       setSubmitError(mapOrderError(err));
-    } finally {
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
+  const closePayment = () => {
+    setPayOrder(null);
+    submittingRef.current = false;
+    setSubmitting(false);
+  };
+
+  const onPaymentSuccess = async (result: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }) => {
+    if (!payOrder) return;
+    try {
+      const paid = await verifyPayment({
+        orderId: payOrder.id,
+        razorpayOrderId: result.razorpayOrderId,
+        razorpayPaymentId: result.razorpayPaymentId,
+        razorpaySignature: result.razorpaySignature,
+      });
+      closePayment();
+      navigation.replace("OrderConfirmation", { order: paid });
+    } catch (err) {
+      closePayment();
+      setSubmitError(mapOrderError(err));
+    }
+  };
+
   return (
-    <Screen
-      footer={
-        canReview && selectedAddress ? (
-          <View style={styles.bar}>
-            <View>
-              <Text style={styles.barLabel}>Total</Text>
-              <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>
-            </View>
-            <View style={styles.barAction}>
-              <Button
-                title="PLACE ORDER"
-                onPress={() => void onPlaceOrder()}
-                loading={submitting}
-                disabled={!canPlaceOrder}
-              />
-            </View>
-          </View>
-        ) : null
-      }
-    >
+    <View style={styles.host}>
+      <Screen
+        footer={
+          canReview && selectedAddress ? (
+            <FooterBar>
+              <View>
+                <Text style={styles.barLabel}>Total</Text>
+                <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>
+              </View>
+              <View style={styles.barAction}>
+                <Button
+                  title="PLACE ORDER"
+                  onPress={() => void onPlaceOrder()}
+                  loading={submitting}
+                  disabled={!canPlaceOrder}
+                />
+              </View>
+            </FooterBar>
+          ) : null
+        }
+      >
       <Text style={styles.title}>Checkout</Text>
 
       {loading ? <Loading /> : null}
@@ -247,7 +295,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
       {hasAddressSection && selectedAddress ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery Address</Text>
-          <View style={styles.addressCard}>
+          <Card>
             <Text style={styles.addressLine}>{selectedAddress.addressLine}</Text>
             <Text style={styles.addressMeta}>
               {selectedAddress.city} - {selectedAddress.pincode}
@@ -262,7 +310,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
                 })
               }
             />
-          </View>
+          </Card>
         </View>
       ) : null}
 
@@ -287,12 +335,34 @@ export function CheckoutScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
-    </Screen>
+      {submitError ? <ErrorMessage message={submitError} /> : null}
+      </Screen>
+      <RazorpayCheckoutModal
+        visible={Boolean(payOrder?.razorpay)}
+        checkout={payOrder?.razorpay ?? null}
+        prefill={{
+          name: user?.name,
+          email: user?.email,
+          contact: razorpayContact(user?.phone),
+        }}
+        onSuccess={(result) => void onPaymentSuccess(result)}
+        onCancel={() => {
+          closePayment();
+          setSubmitError("Payment was cancelled. Your order is saved under Orders with pending payment.");
+        }}
+        onFailed={(message) => {
+          closePayment();
+          setSubmitError(message);
+        }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  host: {
+    flex: 1,
+  },
   title: {
     fontSize: theme.typography.title,
     fontWeight: "700",
@@ -308,19 +378,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.heading,
-    fontWeight: "700",
+    fontWeight: theme.weight.medium,
     color: theme.colors.text,
-  },
-  addressCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   addressLine: {
     color: theme.colors.text,
@@ -371,22 +430,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: theme.typography.heading,
     color: theme.colors.primary,
-    fontWeight: "700",
-  },
-  submitError: {
-    color: theme.colors.danger,
-    fontSize: theme.typography.body,
-  },
-  bar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    fontWeight: theme.weight.bold,
   },
   barLabel: {
     color: theme.colors.textSecondary,

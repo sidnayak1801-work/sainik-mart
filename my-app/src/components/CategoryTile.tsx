@@ -13,15 +13,17 @@ type CategoryTileProps = {
 export function CategoryTile({ category, onPress }: CategoryTileProps) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.tile}>
-      {category.imageUrl ? (
-        <Image
-          source={{ uri: cloudinaryImage(category.imageUrl, "category") }}
-          style={styles.image}
-          contentFit="contain"
-        />
-      ) : (
-        <View style={styles.image} />
-      )}
+      <View style={styles.well}>
+        {category.imageUrl ? (
+          <Image
+            source={{ uri: cloudinaryImage(category.imageUrl, "category") }}
+            style={styles.image}
+            contentFit="contain"
+          />
+        ) : (
+          <View style={styles.image} />
+        )}
+      </View>
       <Text style={styles.name} numberOfLines={2}>
         {category.name}
       </Text>
@@ -37,16 +39,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.xs,
   },
-  image: {
+  well: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.muted,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryRamp[25],
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: theme.spacing.xs,
+  },
+  image: {
+    width: "100%",
+    height: "100%",
   },
   name: {
     color: theme.colors.text,
     fontSize: theme.typography.caption,
-    fontWeight: "600",
+    fontWeight: theme.weight.medium,
     textAlign: "center",
     minHeight: 32,
   },

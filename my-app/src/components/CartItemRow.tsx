@@ -1,6 +1,8 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Card } from "@/components/Card";
+import { QtyStepper } from "@/components/QtyStepper";
 import { theme } from "@/theme";
 import type { CartLineItem } from "@/types/models";
 import { cloudinaryImage } from "@/utils/image";
@@ -21,67 +23,47 @@ export function CartItemRow({ item, disabled = false, onIncrease, onDecrease, on
   const increaseDisabled = disabled || item.quantity >= item.product.stockQuantity;
 
   return (
-    <View style={[styles.card, disabled ? styles.disabled : null]}>
-      {item.product.imageUrl ? (
-        <Image source={{ uri: cloudinaryImage(item.product.imageUrl, "cart") }} style={styles.image} contentFit="cover" />
-      ) : (
-        <View style={styles.image} />
-      )}
-      <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={2}>
-          {item.product.name}
-        </Text>
-        <Text style={styles.price}>₹{unitPrice(item)}</Text>
-        <View style={styles.stepper}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Decrease quantity"
-            onPress={onDecrease}
-            disabled={disabled}
-            style={styles.stepButton}
-          >
-            <Text style={styles.stepLabel}>-</Text>
-          </Pressable>
-          <Text style={styles.quantity}>{item.quantity}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Increase quantity"
-            onPress={onIncrease}
-            disabled={increaseDisabled}
-            style={styles.stepButton}
-          >
-            <Text style={styles.stepLabel}>+</Text>
+    <Card style={disabled ? styles.disabled : undefined}>
+      <View style={styles.row}>
+        {item.product.imageUrl ? (
+          <Image source={{ uri: cloudinaryImage(item.product.imageUrl, "cart") }} style={styles.image} contentFit="cover" />
+        ) : (
+          <View style={styles.image} />
+        )}
+        <View style={styles.body}>
+          <Text style={styles.name} numberOfLines={2}>
+            {item.product.name}
+          </Text>
+          <Text style={styles.price}>₹{unitPrice(item)}</Text>
+          <QtyStepper
+            quantity={item.quantity}
+            onDecrease={onDecrease}
+            onIncrease={onIncrease}
+            decreaseDisabled={disabled}
+            increaseDisabled={increaseDisabled}
+          />
+          <Text style={styles.lineTotal}>Item total: ₹{item.lineTotal}</Text>
+          <Pressable accessibilityRole="button" onPress={onRemove} disabled={disabled}>
+            <Text style={styles.remove}>Remove</Text>
           </Pressable>
         </View>
-        <Text style={styles.lineTotal}>Item total: ₹{item.lineTotal}</Text>
-        <Pressable accessibilityRole="button" onPress={onRemove} disabled={disabled}>
-          <Text style={styles.remove}>Remove</Text>
-        </Pressable>
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
+  row: {
     flexDirection: "row",
     gap: theme.spacing.md,
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.65,
   },
   image: {
     width: 88,
     height: 88,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.xs,
     backgroundColor: theme.colors.muted,
   },
   body: {
@@ -90,49 +72,23 @@ const styles = StyleSheet.create({
   },
   name: {
     color: theme.colors.text,
-    fontSize: theme.typography.subheading,
-    fontWeight: "600",
+    fontSize: theme.typography.h6,
+    fontWeight: theme.weight.semibold,
   },
   price: {
     color: theme.colors.accent,
     fontSize: theme.typography.body,
-    fontWeight: "700",
-  },
-  stepper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-  },
-  stepButton: {
-    minWidth: 48,
-    minHeight: 48,
-    borderRadius: theme.radius.button,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.surface,
-  },
-  stepLabel: {
-    fontSize: theme.typography.subheading,
-    color: theme.colors.primary,
-    fontWeight: "700",
-  },
-  quantity: {
-    minWidth: 24,
-    textAlign: "center",
-    fontSize: theme.typography.body,
-    color: theme.colors.text,
-    fontWeight: "600",
+    fontWeight: theme.weight.bold,
   },
   lineTotal: {
     color: theme.colors.text,
     fontSize: theme.typography.body,
+    fontWeight: theme.weight.regular,
   },
   remove: {
     color: theme.colors.danger,
     fontSize: theme.typography.caption,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
     minHeight: 24,
   },
 });

@@ -70,6 +70,7 @@ export function ProductListScreen({ navigation, route }: Props) {
           {products.map((product) => (
             <View key={product.id} style={styles.gridItem}>
               <ProductCard
+                compact
                 product={product}
                 onPress={() => navigation.navigate("ProductDetails", { productId: product.id })}
               />
@@ -96,10 +97,10 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: theme.spacing.md,
   },
   gridItem: {
-    width: "47%",
-    flexGrow: 1,
+    width: "25%",
+    paddingHorizontal: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
   },
 });

@@ -8,6 +8,7 @@ import { getProduct } from "@/api/products";
 import { CartQtyControls } from "@/components/CartQtyControls";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import { FooterBar } from "@/components/FooterBar";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
@@ -46,15 +47,15 @@ export function ProductDetailsScreen({ route }: Props) {
     <Screen
       footer={
         product ? (
-          <View style={styles.footer}>
+          <FooterBar>
             <View>
-              <Text style={styles.footerLabel}>{outOfStock ? "Out of stock" : "Price"}</Text>
+              <Text style={styles.footerLabel}>{outOfStock ? "Out of stock" : "Total"}</Text>
               <Text style={styles.footerPrice}>₹{discounted ?? product.price}</Text>
             </View>
             <View style={styles.footerAction}>
               <CartQtyControls product={product} />
             </View>
-          </View>
+          </FooterBar>
         ) : null
       }
     >
@@ -101,7 +102,7 @@ export function ProductDetailsScreen({ route }: Props) {
 const styles = StyleSheet.create({
   image: {
     height: 260,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.xs,
     backgroundColor: theme.colors.muted,
     width: "100%",
   },
@@ -116,9 +117,9 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   price: {
-    color: theme.colors.primary,
+    color: theme.colors.accent,
     fontSize: theme.typography.heading,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
   original: {
     color: theme.colors.textSecondary,
@@ -131,18 +132,7 @@ const styles = StyleSheet.create({
   body: {
     color: theme.colors.text,
     fontSize: theme.typography.body,
-    lineHeight: 22,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    lineHeight: 24,
   },
   footerLabel: {
     color: theme.colors.textSecondary,

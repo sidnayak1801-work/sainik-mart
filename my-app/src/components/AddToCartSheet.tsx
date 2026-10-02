@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: "rgba(26, 36, 28, 0.45)",
+    backgroundColor: theme.colors.scrim,
   },
   sheetWrap: {
     paddingHorizontal: theme.spacing.md,
@@ -121,17 +121,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    ...theme.shadow.sm,
   },
   sheet: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.md,
     gap: theme.spacing.md,
+    ...theme.shadow.lift,
   },
   preview: {
     flexDirection: "row",
@@ -141,7 +138,7 @@ const styles = StyleSheet.create({
   image: {
     width: 72,
     height: 72,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.xs,
     backgroundColor: theme.colors.muted,
   },
   previewMeta: {
@@ -151,7 +148,7 @@ const styles = StyleSheet.create({
   name: {
     color: theme.colors.text,
     fontSize: theme.typography.subheading,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
   detailsRow: {
     flexDirection: "row",
@@ -163,7 +160,7 @@ const styles = StyleSheet.create({
   detailsLabel: {
     color: theme.colors.primary,
     fontSize: theme.typography.body,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
   prices: {
     flexDirection: "row",
@@ -173,7 +170,7 @@ const styles = StyleSheet.create({
   price: {
     color: theme.colors.accent,
     fontSize: theme.typography.heading,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
   original: {
     color: theme.colors.textSecondary,

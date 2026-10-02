@@ -3,6 +3,7 @@ import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { AppInfoLinks } from "@/components/AppInfoLinks";
 import { BrandLogo } from "@/components/BrandLogo";
 import { MenuRow } from "@/components/MenuRow";
 import { Screen } from "@/components/Screen";
@@ -37,17 +38,36 @@ export function ProfileScreen({ navigation }: Props) {
       <View style={styles.menu}>
         {isAuthenticated ? (
           <>
-            <MenuRow label="My Orders" onPress={() => navigation.navigate("Orders")} />
-            <MenuRow label="Delivery addresses" onPress={() => navigation.navigate("AddressList")} />
-            <MenuRow label="Sign out" danger onPress={() => void logout()} />
+            <MenuRow icon="receipt-outline" label="My Orders" onPress={() => navigation.navigate("Orders")} />
+            <MenuRow
+              icon="location-outline"
+              label="Delivery addresses"
+              onPress={() => navigation.navigate("AddressList")}
+            />
           </>
         ) : (
           <>
-            <MenuRow label="Sign in" onPress={() => navigation.navigate("Login", { redirect: "Profile" })} />
-            <MenuRow label="Create account" onPress={() => navigation.navigate("Register", { redirect: "Profile" })} />
+            <MenuRow
+              icon="log-in-outline"
+              label="Sign in"
+              onPress={() => navigation.navigate("Login", { redirect: "Profile" })}
+            />
+            <MenuRow
+              icon="person-add-outline"
+              label="Create account"
+              onPress={() => navigation.navigate("Register", { redirect: "Profile" })}
+            />
           </>
         )}
       </View>
+      <View style={styles.menu}>
+        <AppInfoLinks onOpen={(screen) => navigation.navigate(screen)} />
+      </View>
+      {isAuthenticated ? (
+        <View style={styles.menu}>
+          <MenuRow icon="log-out-outline" label="Sign out" danger onPress={() => void logout()} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

@@ -1,10 +1,21 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { after, before, test } from "node:test";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { env } from "./config/env";
+import { setRazorpayOrdersClient } from "./services/razorpay.service";
 import { prisma } from "./utils/prisma";
+
+setRazorpayOrdersClient({
+  create: async ({ amount, currency, receipt }) => ({
+    id: `order_test_${receipt.replace(/-/g, "").slice(0, 14)}`,
+    amount,
+    currency,
+  }),
+});
 
 type JsonResponse = {
   status: number;
@@ -60,6 +71,14 @@ type Pagination = {
   totalPages: number;
 };
 
+type RazorpayPayload = {
+  keyId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  name: string;
+};
+
 const MISSING_ID = "00000000-0000-4000-8000-000000000000";
 
 let server: Server;
@@ -101,6 +120,19 @@ const authJson = (token: string, method: string, path: string, body?: unknown) =
   json(method, path, body, { Authorization: `Bearer ${token}` });
 
 const orderOf = (result: JsonResponse): OrderData => result.body.data as OrderData;
+
+const razorpayOf = (result: JsonResponse): RazorpayPayload => {
+  const payload = (result.body.data as { razorpay?: RazorpayPayload }).razorpay;
+  assert.ok(payload);
+  return payload;
+};
+
+const signPayment = (razorpayOrderId: string, razorpayPaymentId: string): string => {
+  assert.ok(env.RAZORPAY_KEY_SECRET);
+  return createHmac("sha256", env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+};
 
 const addToCart = (token: string, productId: string, quantity: number) =>
   authJson(token, "POST", "/api/cart/items", { productId, quantity });
@@ -306,6 +338,17 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
   assert.equal(lineB?.total, 50);
   assert.equal(order.subtotal, 210);
   assert.equal(order.totalAmount, 210);
+
+  const razorpay = razorpayOf(created);
+  assert.equal(razorpay.currency, "INR");
+  assert.equal(razorpay.amount, 21000);
+  assert.equal(razorpay.name, "Sainik Mart");
+  assert.equal(typeof razorpay.keyId, "string");
+  assert.ok(razorpay.keyId.length > 0);
+  assert.equal(razorpay.orderId, `order_test_${order.id.replace(/-/g, "").slice(0, 14)}`);
+  const payment = await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } });
+  assert.equal(payment.razorpayOrderId, razorpay.orderId);
+  assert.equal(payment.paymentStatus, "PENDING");
 
   const stored = await prisma.order.findUniqueOrThrow({
     where: { id: order.id },
@@ -590,4 +633,78 @@ test("returns own order details with snapshots and hides other users' orders", a
   assert.equal(cross.status, 404);
   assert.equal((cross.body as { message?: string }).message, "Order not found");
   assert.equal(cross.body.data, undefined);
+});
+
+test("verifies a Razorpay signature and rejects invalid or foreign payments", async () => {
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await addToCart(customerAToken, productCId, 1)).status, 201);
+  const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
+  assert.equal(created.status, 201);
+  const order = orderOf(created);
+  const razorpay = razorpayOf(created);
+
+  const unauthenticated = await json("POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: razorpay.orderId,
+    razorpayPaymentId: "pay_test_1",
+    razorpaySignature: "bad",
+  });
+  assert.equal(unauthenticated.status, 401);
+
+  const invalid = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: razorpay.orderId,
+    razorpayPaymentId: "pay_test_bad",
+    razorpaySignature: "not-a-valid-signature",
+  });
+  assert.equal(invalid.status, 400);
+  assert.equal((invalid.body as { message?: string }).message, "Payment verification failed");
+  assert.equal(
+    (await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } })).paymentStatus,
+    "FAILED",
+  );
+
+  const paymentId = "pay_test_ok";
+  const verified = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: razorpay.orderId,
+    razorpayPaymentId: paymentId,
+    razorpaySignature: signPayment(razorpay.orderId, paymentId),
+  });
+  assert.equal(verified.status, 200);
+  const paid = orderOf(verified);
+  assert.equal(paid.paymentStatus, "PAID");
+  assert.equal(paid.orderStatus, "CONFIRMED");
+
+  const stored = await prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    include: { payment: true },
+  });
+  assert.equal(stored.paymentStatus, "PAID");
+  assert.equal(stored.orderStatus, "CONFIRMED");
+  assert.equal(stored.payment?.razorpayPaymentId, paymentId);
+
+  const replay = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: razorpay.orderId,
+    razorpayPaymentId: paymentId,
+    razorpaySignature: signPayment(razorpay.orderId, paymentId),
+  });
+  assert.equal(replay.status, 200);
+  assert.equal(orderOf(replay).paymentStatus, "PAID");
+
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerBId } } });
+  assert.equal((await addToCart(customerBToken, productBId, 1)).status, 201);
+  const createdB = await authJson(customerBToken, "POST", "/api/orders", { addressId: addressBId });
+  assert.equal(createdB.status, 201);
+  const orderB = orderOf(createdB);
+  const razorpayB = razorpayOf(createdB);
+  const foreign = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: orderB.id,
+    razorpayOrderId: razorpayB.orderId,
+    razorpayPaymentId: "pay_test_cross",
+    razorpaySignature: signPayment(razorpayB.orderId, "pay_test_cross"),
+  });
+  assert.equal(foreign.status, 404);
+  assert.equal((foreign.body as { message?: string }).message, "Order not found");
 });

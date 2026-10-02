@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { Card } from "@/components/Card";
 import { theme } from "@/theme";
 import type { Address } from "@/types/models";
 
@@ -26,55 +27,46 @@ export function AddressCard({
       accessibilityState={{ selected, disabled }}
       onPress={onSelect}
       disabled={disabled}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [pressed && styles.pressed]}
     >
-      <View style={styles.row}>
-        <View style={[styles.radio, selected ? styles.radioSelected : null]}>
-          {selected ? <View style={styles.radioDot} /> : null}
+      <Card>
+        <View style={styles.row}>
+          <View style={[styles.radio, selected ? styles.radioSelected : null]}>
+            {selected ? <View style={styles.radioDot} /> : null}
+          </View>
+          <View style={styles.body}>
+            <Text style={styles.line}>{address.addressLine}</Text>
+            <Text style={styles.meta}>
+              {address.city} - {address.pincode}
+            </Text>
+          </View>
         </View>
-        <View style={styles.body}>
-          <Text style={styles.line}>{address.addressLine}</Text>
-          <Text style={styles.meta}>
-            {address.city} - {address.pincode}
-          </Text>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onEdit}
+            disabled={disabled}
+            hitSlop={8}
+            style={styles.action}
+          >
+            <Text style={styles.edit}>Edit</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDelete}
+            disabled={disabled}
+            hitSlop={8}
+            style={styles.action}
+          >
+            <Text style={styles.delete}>Delete</Text>
+          </Pressable>
         </View>
-      </View>
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onEdit}
-          disabled={disabled}
-          hitSlop={8}
-          style={styles.action}
-        >
-          <Text style={styles.edit}>Edit</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onDelete}
-          disabled={disabled}
-          hitSlop={8}
-          style={styles.action}
-        >
-          <Text style={styles.delete}>Delete</Text>
-        </Pressable>
-      </View>
+      </Card>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
-    gap: theme.spacing.md,
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
   pressed: {
     opacity: 0.92,
   },
@@ -109,7 +101,7 @@ const styles = StyleSheet.create({
   line: {
     color: theme.colors.text,
     fontSize: theme.typography.body,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
   meta: {
     color: theme.colors.textSecondary,
@@ -119,6 +111,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   action: {
     minHeight: 44,
@@ -127,11 +120,11 @@ const styles = StyleSheet.create({
   edit: {
     color: theme.colors.primary,
     fontSize: theme.typography.body,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
   delete: {
     color: theme.colors.danger,
     fontSize: theme.typography.body,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
 });

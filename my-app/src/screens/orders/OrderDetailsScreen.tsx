@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { getOrderById } from "@/api/orders";
 import { ApiError } from "@/api/client";
+import { Card } from "@/components/Card";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Loading } from "@/components/Loading";
 import { OrderItemRow } from "@/components/OrderItemRow";
@@ -78,7 +79,7 @@ export function OrderDetailsScreen({ route }: Props) {
             </Text>
           </View>
 
-          <View style={styles.section}>
+          <Card>
             <Text style={styles.sectionTitle}>Items</Text>
             {order.items.map((item) => (
               <OrderItemRow key={item.id} item={item} />
@@ -87,17 +88,17 @@ export function OrderDetailsScreen({ route }: Props) {
               <Text style={styles.totalLabel}>Total</Text>
               <Text style={styles.totalValue}>₹{order.totalAmount}</Text>
             </View>
-          </View>
+          </Card>
 
           {order.address ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Delivery Address</Text>
-              <View style={styles.addressCard}>
+              <Card>
                 <Text style={styles.addressLine}>{order.address.addressLine}</Text>
                 <Text style={styles.addressMeta}>
                   {order.address.city} - {order.address.pincode}
                 </Text>
-              </View>
+              </Card>
             </View>
           ) : null}
         </>
@@ -118,13 +119,13 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     alignSelf: "flex-start",
-    backgroundColor: theme.colors.muted,
+    backgroundColor: theme.colors.primaryRamp[25],
     borderRadius: theme.radius.button,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
   },
   cancelledPill: {
-    backgroundColor: "#F8E8E8",
+    backgroundColor: theme.colors.dangerRamp[25],
   },
   status: {
     color: theme.colors.primary,
@@ -136,13 +137,10 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: theme.typography.heading,
-    fontWeight: "700",
+    fontWeight: theme.weight.medium,
     color: theme.colors.text,
   },
   totalRow: {
@@ -162,12 +160,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.heading,
     color: theme.colors.primary,
     fontWeight: "700",
-  },
-  addressCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
   },
   addressLine: {
     color: theme.colors.text,

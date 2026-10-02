@@ -4,7 +4,16 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { setRazorpayOrdersClient } from "./services/razorpay.service";
 import { prisma } from "./utils/prisma";
+
+setRazorpayOrdersClient({
+  create: async ({ amount, currency, receipt }) => ({
+    id: `order_test_${receipt.replace(/-/g, "").slice(0, 14)}`,
+    amount,
+    currency,
+  }),
+});
 
 type JsonResponse = {
   status: number;

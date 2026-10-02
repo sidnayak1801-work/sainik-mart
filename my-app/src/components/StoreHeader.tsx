@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { listAddresses } from "@/api/addresses";
+import { AppInfoLinks } from "@/components/AppInfoLinks";
 import { BrandLogo } from "@/components/BrandLogo";
 import { MenuRow } from "@/components/MenuRow";
 import { useAuth } from "@/context/AuthContext";
@@ -15,10 +17,11 @@ import type { Address } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
 
 type Navigation = NativeStackNavigationProp<MainStackParamList>;
+type InfoScreenName = "About" | "Terms" | "Privacy" | "Contact";
 
 export function StoreHeader() {
   const navigation = useNavigation<Navigation>();
-  const { logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
   const [address, setAddress] = useState<Address | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,12 +57,12 @@ export function StoreHeader() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const openScreen = (screen: InfoScreenName) => {
+    closeMenu();
+    navigation.navigate(screen);
+  };
+
   const locationLabel = address ? `${address.city} - ${address.pincode}` : "Select location";
-  const locationHint = address
-    ? address.addressLine
-    : isAuthenticated
-      ? "Add a delivery address"
-      : "Sign in to set delivery";
 
   return (
     <View style={styles.wrap}>
@@ -80,14 +83,14 @@ export function StoreHeader() {
           }}
           style={styles.location}
         >
-          <Text style={styles.locationTitle} numberOfLines={1}>
-            Current Location
-          </Text>
+          <View style={styles.locationTitleRow}>
+            <Text style={styles.locationTitle} numberOfLines={1}>
+              Current Location
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={theme.colors.text} />
+          </View>
           <Text style={styles.locationMeta} numberOfLines={1}>
             {locationLabel}
-          </Text>
-          <Text style={styles.locationHint} numberOfLines={1}>
-            {locationHint}
           </Text>
         </Pressable>
         <Pressable
@@ -117,34 +120,57 @@ export function StoreHeader() {
         />
       </View>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu}>
-        <Pressable style={styles.backdrop} onPress={closeMenu}>
-          <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.sheetTitle}>Menu</Text>
-            {isAuthenticated ? (
-              <>
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu} statusBarTranslucent>
+        <View style={styles.drawerRoot}>
+          <SafeAreaView style={styles.drawer} edges={["top", "left", "bottom"]}>
+            <View style={styles.drawerHeader}>
+              <Ionicons name="person-circle-outline" size={40} color={theme.colors.textSecondary} />
+              <View style={styles.drawerHello}>
+                <Text style={styles.helloTitle}>{user ? `Hello ${user.name}` : "Hello Guest"}</Text>
+                <Text style={styles.helloSubtitle}>{user ? user.email : "Login to proceed"}</Text>
+              </View>
+            </View>
+
+            {!isAuthenticated ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Login here"
+                onPress={() => {
+                  closeMenu();
+                  navigation.navigate("Login", { redirect: "Profile" });
+                }}
+                style={styles.loginHere}
+              >
+                <Text style={styles.loginHereLabel}>Login Here</Text>
+                <Ionicons name="arrow-forward" size={16} color={theme.colors.primary} />
+              </Pressable>
+            ) : null}
+
+            <ScrollView style={styles.drawerScroll} contentContainerStyle={styles.drawerList}>
+              {isAuthenticated ? (
+                <>
+                  <MenuRow
+                    icon="receipt-outline"
+                    label="My Orders"
+                    onPress={() => {
+                      closeMenu();
+                      navigation.navigate("MainTabs", { screen: "Orders" });
+                    }}
+                  />
+                  <MenuRow
+                    icon="location-outline"
+                    label="Delivery addresses"
+                    onPress={() => {
+                      closeMenu();
+                      navigation.navigate("AddressList");
+                    }}
+                  />
+                </>
+              ) : null}
+              <AppInfoLinks onOpen={openScreen} />
+              {isAuthenticated ? (
                 <MenuRow
-                  label="My Orders"
-                  onPress={() => {
-                    closeMenu();
-                    navigation.navigate("MainTabs", { screen: "Orders" });
-                  }}
-                />
-                <MenuRow
-                  label="Delivery addresses"
-                  onPress={() => {
-                    closeMenu();
-                    navigation.navigate("AddressList");
-                  }}
-                />
-                <MenuRow
-                  label="Profile"
-                  onPress={() => {
-                    closeMenu();
-                    navigation.navigate("MainTabs", { screen: "Profile" });
-                  }}
-                />
-                <MenuRow
+                  icon="log-out-outline"
                   label="Sign out"
                   danger
                   onPress={() => {
@@ -152,27 +178,16 @@ export function StoreHeader() {
                     void logout();
                   }}
                 />
-              </>
-            ) : (
-              <>
-                <MenuRow
-                  label="Sign in"
-                  onPress={() => {
-                    closeMenu();
-                    navigation.navigate("Login", { redirect: "Profile" });
-                  }}
-                />
-                <MenuRow
-                  label="Create account"
-                  onPress={() => {
-                    closeMenu();
-                    navigation.navigate("Register", { redirect: "Profile" });
-                  }}
-                />
-              </>
-            )}
-          </Pressable>
-        </Pressable>
+              ) : null}
+            </ScrollView>
+          </SafeAreaView>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close menu"
+            onPress={closeMenu}
+            style={styles.drawerScrim}
+          />
+        </View>
       </Modal>
     </View>
   );
@@ -192,10 +207,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.sm,
+    minHeight: 64,
   },
   location: {
     flex: 1,
     gap: 1,
+  },
+  locationTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
   },
   locationTitle: {
     color: theme.colors.text,
@@ -205,11 +226,7 @@ const styles = StyleSheet.create({
   locationMeta: {
     color: theme.colors.primary,
     fontSize: theme.typography.body,
-    fontWeight: "600",
-  },
-  locationHint: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.typography.caption,
+    fontWeight: "700",
   },
   searchRow: {
     flexDirection: "row",
@@ -228,24 +245,61 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body,
     minHeight: 44,
   },
-  backdrop: {
+  drawerRoot: {
     flex: 1,
-    backgroundColor: "rgba(26, 36, 28, 0.35)",
-    justifyContent: "flex-start",
-    paddingTop: 72,
-    paddingHorizontal: theme.spacing.md,
+    flexDirection: "row",
+    backgroundColor: theme.colors.scrim,
   },
-  sheet: {
+  drawer: {
+    width: "82%",
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    overflow: "hidden",
   },
-  sheetTitle: {
+  drawerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
+  },
+  drawerHello: {
+    flex: 1,
+    gap: 2,
+  },
+  helloTitle: {
+    color: theme.colors.text,
+    fontSize: theme.typography.subheading,
+    fontWeight: "700",
+  },
+  helloSubtitle: {
     color: theme.colors.textSecondary,
     fontSize: theme.typography.caption,
+  },
+  loginHere: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    minHeight: 44,
+    borderRadius: theme.radius.button,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+  },
+  loginHereLabel: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.body,
     fontWeight: "700",
-    textTransform: "uppercase",
+  },
+  drawerScroll: {
+    flex: 1,
+  },
+  drawerList: {
+    paddingBottom: theme.spacing.lg,
+  },
+  drawerScrim: {
+    flex: 1,
   },
 });

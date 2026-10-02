@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -72,6 +73,8 @@ export function Input({
   autoComplete,
   englishOnly = false,
 }: InputProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -96,7 +99,13 @@ export function Input({
         onSubmitEditing={onSubmitEditing}
         textContentType={textContentType}
         autoComplete={autoComplete ?? "off"}
-        style={[styles.input, error ? styles.inputError : null]}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={[
+          styles.input,
+          focused && !error ? styles.inputFocused : null,
+          error ? styles.inputError : null,
+        ]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -110,20 +119,25 @@ const styles = StyleSheet.create({
   label: {
     color: theme.colors.text,
     fontSize: theme.typography.caption,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
   input: {
     backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,
     borderWidth: 1,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.xs,
     minHeight: 48,
     paddingHorizontal: theme.spacing.md,
     color: theme.colors.text,
     fontSize: theme.typography.body,
   },
+  inputFocused: {
+    borderColor: theme.colors.primary,
+    ...theme.shadow.focus,
+  },
   inputError: {
     borderColor: theme.colors.danger,
+    ...theme.shadow.focusDanger,
   },
   error: {
     color: theme.colors.danger,

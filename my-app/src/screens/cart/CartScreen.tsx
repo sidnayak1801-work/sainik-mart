@@ -11,6 +11,7 @@ import { Button } from "@/components/Button";
 import { CartItemRow } from "@/components/CartItemRow";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import { FooterBar } from "@/components/FooterBar";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/context/AuthContext";
@@ -128,7 +129,7 @@ export function CartScreen({ navigation }: Props) {
       scroll={false}
       footer={
         !loading && items.length > 0 ? (
-          <View style={styles.bar}>
+          <FooterBar>
             <View>
               <Text style={styles.barLabel}>Subtotal</Text>
               <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>
@@ -136,7 +137,7 @@ export function CartScreen({ navigation }: Props) {
             <View style={styles.barAction}>
               <Button title="Proceed to Checkout" onPress={goCheckout} />
             </View>
-          </View>
+          </FooterBar>
         ) : null
       }
     >
@@ -184,7 +185,7 @@ export function CartScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   title: {
     fontSize: theme.typography.title,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
     color: theme.colors.text,
   },
   empty: {
@@ -203,17 +204,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
   },
-  bar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
   barLabel: {
     color: theme.colors.textSecondary,
     fontSize: theme.typography.caption,
@@ -221,7 +211,7 @@ const styles = StyleSheet.create({
   barValue: {
     color: theme.colors.primary,
     fontSize: theme.typography.heading,
-    fontWeight: "700",
+    fontWeight: theme.weight.bold,
   },
   barAction: {
     flex: 1,

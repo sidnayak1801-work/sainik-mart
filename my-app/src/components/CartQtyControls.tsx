@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ApiError } from "@/api/client";
+import { QtyStepper } from "@/components/QtyStepper";
 import { useCart } from "@/context/CartContext";
 import { setProductQuantity } from "@/services/cartService";
 import { theme } from "@/theme";
@@ -51,33 +52,13 @@ export function CartQtyControls({ product }: CartQtyControlsProps) {
           )}
         </Pressable>
       ) : (
-        <View style={styles.stepper}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Decrease quantity"
-            onPress={() => void changeTo(quantity - 1)}
-            disabled={busy}
-            style={styles.stepButton}
-          >
-            <Text style={styles.stepLabel}>−</Text>
-          </Pressable>
-          <View style={styles.qtyWrap}>
-            {busy ? (
-              <ActivityIndicator color={theme.colors.primaryText} />
-            ) : (
-              <Text style={styles.qty}>{quantity}</Text>
-            )}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Increase quantity"
-            onPress={() => void changeTo(quantity + 1)}
-            disabled={busy || atCeiling}
-            style={[styles.stepButton, atCeiling && styles.disabled]}
-          >
-            <Text style={styles.stepLabel}>+</Text>
-          </Pressable>
-        </View>
+        <QtyStepper
+          quantity={quantity}
+          onDecrease={() => void changeTo(quantity - 1)}
+          onIncrease={() => void changeTo(quantity + 1)}
+          increaseDisabled={atCeiling}
+          busy={busy}
+        />
       )}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -99,40 +80,10 @@ const styles = StyleSheet.create({
   addLabel: {
     color: theme.colors.primaryText,
     fontSize: theme.typography.body,
-    fontWeight: "700",
-  },
-  stepper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.button,
-    minHeight: 48,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  stepButton: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepLabel: {
-    color: theme.colors.primaryText,
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  qtyWrap: {
-    minWidth: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  qty: {
-    color: theme.colors.primaryText,
-    fontSize: theme.typography.subheading,
-    fontWeight: "800",
+    fontWeight: theme.weight.semibold,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.65,
   },
   error: {
     color: theme.colors.danger,

@@ -1,9 +1,11 @@
-import { OrderStatus, Prisma, type OrderItem } from "@prisma/client";
+import { OrderStatus, PaymentStatus, Prisma, type OrderItem } from "@prisma/client";
 
 import type { AdminOrderListQuery, CreateOrderInput, OrderListQuery } from "../validators/order.validators";
+import type { VerifyPaymentInput } from "../validators/payment.validators";
 import { AppError } from "../utils/AppError";
 import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
+import { createRazorpayOrder, getRazorpayKeyId, verifyPaymentSignature } from "./razorpay.service";
 
 const cartInclude = {
   items: {
@@ -246,7 +248,91 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     });
   });
 
-  return serializeOrder(created);
+  const amountPaise = Math.round(toMoney(created.totalAmount) * 100);
+  const razorpayOrder = await createRazorpayOrder({
+    amountPaise,
+    receipt: created.id,
+  });
+
+  await prisma.payment.create({
+    data: {
+      orderId: created.id,
+      razorpayOrderId: razorpayOrder.id,
+      paymentStatus: PaymentStatus.PENDING,
+    },
+  });
+
+  return {
+    ...serializeOrder(created),
+    razorpay: {
+      keyId: getRazorpayKeyId(),
+      orderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      name: "Sainik Mart",
+    },
+  };
+};
+
+export const verifyPayment = async (userId: string, input: VerifyPaymentInput) => {
+  const order = await prisma.order.findFirst({
+    where: { id: input.orderId, userId },
+    include: {
+      ...orderInclude,
+      payment: true,
+    },
+  });
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  if (order.paymentStatus === PaymentStatus.PAID) {
+    return serializeOrder(order);
+  }
+
+  const payment = order.payment;
+  if (!payment?.razorpayOrderId || payment.razorpayOrderId !== input.razorpayOrderId) {
+    throw new AppError("Payment not found", 400);
+  }
+
+  const valid = verifyPaymentSignature(
+    input.razorpayOrderId,
+    input.razorpayPaymentId,
+    input.razorpaySignature,
+  );
+
+  if (!valid) {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { paymentStatus: PaymentStatus.FAILED },
+    });
+    throw new AppError("Payment verification failed", 400);
+  }
+
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        razorpayPaymentId: input.razorpayPaymentId,
+      },
+    }),
+    prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        orderStatus: OrderStatus.CONFIRMED,
+      },
+    }),
+  ]);
+
+  return serializeOrder(
+    await prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+      include: orderInclude,
+    }),
+  );
 };
 
 export const listOrders = async (userId: string, query: OrderListQuery) => {

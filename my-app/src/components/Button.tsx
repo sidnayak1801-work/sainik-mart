@@ -32,7 +32,8 @@ export function Button({
         styles.button,
         variant === "accent" && styles.accent,
         variant === "ghost" && styles.ghost,
-        pressed && styles.pressed,
+        pressed &&
+          (variant === "ghost" ? styles.pressedGhost : variant === "accent" ? styles.pressedAccent : styles.pressed),
         isDisabled && styles.disabled,
       ]}
     >
@@ -49,29 +50,39 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.button,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   accent: {
     backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   ghost: {
     backgroundColor: "transparent",
-    borderWidth: 1,
     borderColor: theme.colors.primary,
   },
   pressed: {
+    backgroundColor: theme.colors.primaryDark,
+    borderColor: theme.colors.primaryDark,
+  },
+  pressedAccent: {
+    backgroundColor: theme.colors.accentRamp[600],
+    borderColor: theme.colors.accentRamp[600],
+  },
+  pressedGhost: {
     opacity: 0.85,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.65,
   },
   title: {
     color: theme.colors.primaryText,
     fontSize: theme.typography.body,
-    fontWeight: "600",
+    fontWeight: theme.weight.semibold,
   },
   ghostTitle: {
     color: theme.colors.primary,

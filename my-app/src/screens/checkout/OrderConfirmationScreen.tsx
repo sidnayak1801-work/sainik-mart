@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
 import type { MainStackParamList } from "@/types/navigation";
@@ -14,13 +15,13 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <View style={styles.body}>
-        <View style={styles.card}>
+        <Card style={styles.confirmCard}>
           <Text style={styles.eyebrow}>Thank you</Text>
           <Text style={styles.title}>Order placed</Text>
           <Text style={styles.id}>Order {order.id}</Text>
           <Text style={styles.status}>{order.orderStatus}</Text>
           <Text style={styles.total}>₹{order.totalAmount}</Text>
-        </View>
+        </Card>
       </View>
       <Button
         title="Continue Shopping"
@@ -50,10 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
+  confirmCard: {
     alignItems: "center",
     gap: theme.spacing.sm,
   },
@@ -83,8 +81,8 @@ const styles = StyleSheet.create({
   },
   total: {
     fontSize: theme.typography.heading,
-    fontWeight: "700",
-    color: theme.colors.text,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.primary,
     textAlign: "center",
     marginTop: theme.spacing.sm,
   },

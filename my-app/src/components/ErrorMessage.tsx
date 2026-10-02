@@ -1,7 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
-
-import { theme } from "@/theme";
-import { Button } from "./Button";
+import { AlertBanner } from "@/components/AlertBanner";
+import { Button } from "@/components/Button";
 
 type ErrorMessageProps = {
   message: string;
@@ -10,20 +8,8 @@ type ErrorMessageProps = {
 
 export function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.message}>{message}</Text>
+    <AlertBanner message={message} tone="danger">
       {onRetry ? <Button title="Retry" onPress={onRetry} /> : null}
-    </View>
+    </AlertBanner>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-  },
-  message: {
-    color: theme.colors.danger,
-    fontSize: theme.typography.body,
-  },
-});

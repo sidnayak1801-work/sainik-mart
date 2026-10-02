@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: theme.typography.heading,
     color: theme.colors.text,
-    fontWeight: "600",
+    fontWeight: theme.weight.medium,
     textAlign: "center",
   },
   description: {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -16,6 +16,7 @@ import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreHeader } from "@/components/StoreHeader";
 import { theme } from "@/theme";
+import { APP_TAGLINE } from "@/utils/constants";
 import type { Category, Product } from "@/types/models";
 import type { MainStackParamList, MainTabParamList } from "@/types/navigation";
 
@@ -65,6 +66,16 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.body}>
         {loading ? <Loading /> : null}
         {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
+
+        <View style={styles.banner}>
+          <View style={styles.bannerWell}>
+            <Text style={styles.bannerMark}>SM</Text>
+          </View>
+          <View style={styles.bannerCopy}>
+            <Text style={styles.bannerEyebrow}>Sainik Mart</Text>
+            <Text style={styles.bannerTitle}>{APP_TAGLINE}</Text>
+          </View>
+        </View>
 
         <SectionHeader title="Shop by category" onSeeAll={() => navigation.navigate("Categories")} />
         {!loading && !error && categories.length === 0 ? (
@@ -119,7 +130,48 @@ const styles = StyleSheet.create({
   },
   productItem: {
     width: "25%",
-    paddingHorizontal: 4,
+    paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
+  },
+  banner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderBottomWidth: 3,
+    borderBottomColor: theme.colors.accent,
+    padding: theme.spacing.md,
+  },
+  bannerWell: {
+    width: 56,
+    height: 56,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.primaryRamp[25],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerMark: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.h5,
+    fontWeight: theme.weight.bold,
+  },
+  bannerCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  bannerEyebrow: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
+    fontWeight: theme.weight.semibold,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  bannerTitle: {
+    color: theme.colors.text,
+    fontSize: theme.typography.body,
+    fontWeight: theme.weight.semibold,
   },
 });
