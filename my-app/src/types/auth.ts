@@ -15,6 +15,16 @@ export type LoginRequest = {
   password: string;
 };
 
+export type OtpVerifyRequest = {
+  identifier: string;
+  code: string;
+};
+
+export type OtpRequestPayload = {
+  expiresInSec: number;
+  devCode?: string;
+};
+
 export type RegisterRequest = {
   name: string;
   email: string;

@@ -1,5 +1,6 @@
 import "react-native-gesture-handler";
 
+import { useEffect } from "react";
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +10,8 @@ import { StyleSheet } from "react-native";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { AppNavigator } from "@/navigation/AppNavigator";
+import { flushPendingNotificationNavigation, navigationRef } from "@/navigation/navigationRef";
+import { handleLastNotificationTap, subscribeNotificationTaps } from "@/notifications/push";
 import { theme } from "@/theme";
 
 const navigationTheme = {
@@ -25,12 +28,22 @@ const navigationTheme = {
 };
 
 export default function App() {
+  useEffect(() => {
+    const taps = subscribeNotificationTaps();
+    void handleLastNotificationTap();
+    return () => taps.remove();
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <AuthProvider>
           <CartProvider>
-            <NavigationContainer theme={navigationTheme}>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={navigationTheme}
+              onReady={flushPendingNotificationNavigation}
+            >
               <StatusBar style="auto" />
               <AppNavigator />
             </NavigationContainer>

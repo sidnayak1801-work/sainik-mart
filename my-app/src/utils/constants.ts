@@ -30,6 +30,10 @@ const resolveApiUrl = (): string => {
     return configuredUrl || `http://127.0.0.1:${DEFAULT_PORT}`;
   }
 
+  if (!__DEV__) {
+    return configuredUrl;
+  }
+
   const host = metroHostname();
   if (host && (!configuredUrl || isLoopbackUrl(configuredUrl))) {
     const port = configuredUrl.match(/:(\d+)$/)?.[1] ?? DEFAULT_PORT;

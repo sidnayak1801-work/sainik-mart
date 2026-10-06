@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { toOtpRequestData } from "./services/auth.service";
 import { prisma } from "./utils/prisma";
 
 type JsonResponse = {
@@ -66,6 +67,9 @@ after(async () => {
     await prisma.category.deleteMany({ where: { id: createdCategoryId } });
   }
   await prisma.category.deleteMany({ where: { name: { startsWith: `Day14 ${stamp}` } } });
+  await prisma.authOtp.deleteMany({
+    where: { identifier: { contains: stamp } },
+  });
   await prisma.user.deleteMany({
     where: { email: { startsWith: "d14.", contains: stamp } },
   });
@@ -189,6 +193,75 @@ test("GET /api/auth/me requires a valid JWT", async () => {
   const payload = valid.body.data as { user: { email: string } };
   assert.equal(payload.user.email, customerEmail);
   assertNoPasswordHash(valid.body);
+});
+
+test("OTP request and verify issue a JWT and reject bad codes", async () => {
+  const unknown = await json("POST", "/api/auth/otp/request", {
+    identifier: `d14.missing.otp.${stamp}@example.com`,
+  });
+  assert.equal(unknown.status, 401);
+  assert.equal(unknown.body.message, "Invalid credentials");
+  assert.equal("devCode" in unknown.body, false);
+
+  await prisma.authOtp.create({
+    data: {
+      identifier: customerEmail,
+      codeHash: "expired",
+      expiresAt: new Date(Date.now() - 1000),
+    },
+  });
+  const expired = await json("POST", "/api/auth/otp/verify", {
+    identifier: customerEmail,
+    code: "123456",
+  });
+  assert.equal(expired.status, 401);
+
+  const requested = await json("POST", "/api/auth/otp/request", {
+    identifier: customerEmail,
+  });
+  assert.equal(requested.status, 200);
+  const requestData = requested.body.data as { expiresInSec: number; devCode?: string };
+  assert.equal(requestData.expiresInSec, 600);
+  assert.equal(typeof requestData.devCode, "string");
+  assert.equal(requestData.devCode?.length, 6);
+
+  const cooldown = await json("POST", "/api/auth/otp/request", {
+    identifier: customerEmail,
+  });
+  assert.equal(cooldown.status, 429);
+
+  const wrong = await json("POST", "/api/auth/otp/verify", {
+    identifier: customerEmail,
+    code: requestData.devCode === "000000" ? "111111" : "000000",
+  });
+  assert.equal(wrong.status, 401);
+  assert.equal(wrong.body.message, "Invalid credentials");
+
+  const invalidShape = await json("POST", "/api/auth/otp/verify", {
+    identifier: customerEmail,
+    code: "12",
+  });
+  assert.equal(invalidShape.status, 400);
+
+  const success = await json("POST", "/api/auth/otp/verify", {
+    identifier: customerEmail,
+    code: requestData.devCode,
+  });
+  assert.equal(success.status, 200);
+  const data = success.body.data as AuthData;
+  assert.ok(data.accessToken);
+  assert.equal(data.user.email, customerEmail);
+  assertNoPasswordHash(success.body);
+  customerToken = data.accessToken;
+});
+
+test("OTP request payload never includes devCode in production", () => {
+  const production = toOtpRequestData(600, "123456", "production");
+  assert.deepEqual(production, { expiresInSec: 600 });
+  assert.equal("devCode" in production, false);
+
+  const development = toOtpRequestData(600, "123456", "development");
+  assert.deepEqual(development, { expiresInSec: 600, devCode: "123456" });
 });
 
 test("CUSTOMER is forbidden from admin catalog writes while ADMIN is allowed", async () => {

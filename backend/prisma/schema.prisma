@@ -28,6 +28,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum DevicePlatform {
+  ANDROID
+  IOS
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @db.VarChar(120)
@@ -38,12 +43,40 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  cart      Cart?
-  addresses Address[]
-  orders    Order[]
+  cart         Cart?
+  addresses    Address[]
+  orders       Order[]
+  deviceTokens DeviceToken[]
 
   @@index([role])
   @@map("users")
+}
+
+model DeviceToken {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  token     String         @unique @db.VarChar(512)
+  platform  DevicePlatform
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+model AuthOtp {
+  id         String    @id @default(uuid()) @db.Uuid
+  identifier String    @db.VarChar(255)
+  codeHash   String    @map("code_hash") @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([identifier])
+  @@map("auth_otps")
 }
 
 model Category {

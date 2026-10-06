@@ -34,6 +34,10 @@ yarn-error.*
 .env
 .env*.local
 
+# Firebase client config (drop your own file for EAS FCM builds)
+google-services.json
+GoogleService-Info.plist
+
 # typescript
 *.tsbuildinfo
 

@@ -18,6 +18,9 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
   RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
+  FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().min(1).optional(),
+  FIREBASE_PRIVATE_KEY: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse({
@@ -30,6 +33,9 @@ const parsed = envSchema.safeParse({
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || undefined,
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_API_KEY || undefined,
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || undefined,
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || undefined,
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || undefined,
+  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY || undefined,
 });
 
 if (!parsed.success) {

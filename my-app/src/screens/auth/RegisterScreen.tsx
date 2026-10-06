@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { ApiError } from "@/api/client";
-import { BrandLogo } from "@/components/BrandLogo";
+import { AuthScreenChrome, AuthTextLink } from "@/components/AuthScreenChrome";
 import { Button } from "@/components/Button";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Input } from "@/components/Input";
-import { Screen } from "@/components/Screen";
 import { toAuthErrorMessage, useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { continueAfterAuth } from "@/navigation/authRedirect";
@@ -119,12 +118,22 @@ export function RegisterScreen({ navigation, route }: Props) {
   };
 
   return (
-    <Screen>
-      <View style={styles.brand}>
-        <BrandLogo size="lg" />
-      </View>
-      <Text style={styles.title}>Register</Text>
-      <Text style={styles.subtitle}>Create an account with your name, email, and phone.</Text>
+    <AuthScreenChrome
+      title="Register"
+      subtitle="Create an account with your name, email, and phone."
+      logo
+      onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      footer={
+        <View style={styles.links}>
+          <AuthTextLink
+            prompt="Already have an account?"
+            action="Login"
+            onPress={() => navigation.navigate("Login", redirect ? { redirect } : undefined)}
+            disabled={submitting}
+          />
+        </View>
+      }
+    >
       <Input
         label="Name"
         placeholder="your name"
@@ -179,28 +188,13 @@ export function RegisterScreen({ navigation, route }: Props) {
       />
       {formError ? <ErrorMessage message={formError} /> : null}
       <Button title="Register" onPress={() => void onSubmit()} loading={submitting} disabled={submitting} />
-      <Button
-        title="Already have an account? Login"
-        onPress={() => navigation.navigate("Login", redirect ? { redirect } : undefined)}
-        variant="ghost"
-      />
-    </Screen>
+    </AuthScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  brand: {
-    alignItems: "center",
-    marginBottom: theme.spacing.sm,
-  },
-  title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  subtitle: {
-    fontSize: theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+  links: {
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
   },
 });

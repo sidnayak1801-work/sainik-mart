@@ -3,8 +3,10 @@ import { OrderStatus, PaymentStatus, Prisma, type OrderItem } from "@prisma/clie
 import type { AdminOrderListQuery, CreateOrderInput, OrderListQuery } from "../validators/order.validators";
 import type { VerifyPaymentInput } from "../validators/payment.validators";
 import { AppError } from "../utils/AppError";
+import { logger } from "../utils/logger";
 import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
+import { sendOrderCreatedNotification, sendOrderStatusNotification } from "./notification.service";
 import { createRazorpayOrder, getRazorpayKeyId, verifyPaymentSignature } from "./razorpay.service";
 
 const cartInclude = {
@@ -248,6 +250,12 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     });
   });
 
+  try {
+    await sendOrderCreatedNotification(userId, created.id);
+  } catch (error) {
+    logger.error("Order-created notification failed", error);
+  }
+
   const amountPaise = Math.round(toMoney(created.totalAmount) * 100);
   const razorpayOrder = await createRazorpayOrder({
     amountPaise,
@@ -451,7 +459,7 @@ export const getAdminOrderById = async (id: string) => {
 export const updateOrderStatus = async (id: string, status: OrderStatus) => {
   const existing = await prisma.order.findUnique({
     where: { id },
-    select: { id: true, orderStatus: true },
+    select: { id: true, orderStatus: true, userId: true },
   });
 
   if (!existing) {
@@ -467,6 +475,12 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
     where: { id },
     data: { orderStatus: status },
   });
+
+  try {
+    await sendOrderStatusNotification(existing.userId, id, status);
+  } catch (error) {
+    logger.error("Order-status notification failed", error);
+  }
 
   return getAdminOrderById(id);
 };

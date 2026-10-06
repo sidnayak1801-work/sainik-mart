@@ -6,8 +6,15 @@ import type { Server } from "node:http";
 
 import { createApp } from "./app";
 import { env } from "./config/env";
+import { setNotificationSender, type NotificationPayload } from "./services/notification.service";
 import { setRazorpayOrdersClient } from "./services/razorpay.service";
 import { prisma } from "./utils/prisma";
+
+const orderNotificationCalls: NotificationPayload[] = [];
+const recordOrderNotifications = async (_tokens: string[], payload: NotificationPayload) => {
+  orderNotificationCalls.push(payload);
+  return { invalidTokens: [] };
+};
 
 setRazorpayOrdersClient({
   create: async ({ amount, currency, receipt }) => ({
@@ -138,6 +145,7 @@ const addToCart = (token: string, productId: string, quantity: number) =>
   authJson(token, "POST", "/api/cart/items", { productId, quantity });
 
 before(async () => {
+  setNotificationSender(recordOrderNotifications);
   stamp = `${Date.now()}`;
   server = createApp().listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -223,6 +231,16 @@ before(async () => {
   });
   assert.equal(addressB.status, 201);
   addressBId = (addressB.body.data as { id: string }).id;
+
+  assert.equal(
+    (
+      await authJson(customerAToken, "POST", "/api/notifications/device-token", {
+        token: `d19-a-${stamp}`,
+        platform: "ANDROID",
+      })
+    ).status,
+    200,
+  );
 });
 
 after(async () => {
@@ -346,6 +364,11 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
   assert.equal(typeof razorpay.keyId, "string");
   assert.ok(razorpay.keyId.length > 0);
   assert.equal(razorpay.orderId, `order_test_${order.id.replace(/-/g, "").slice(0, 14)}`);
+  assert.ok(
+    orderNotificationCalls.some(
+      (payload) => payload.data.type === "ORDER_CREATED" && payload.data.orderId === order.id,
+    ),
+  );
   const payment = await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } });
   assert.equal(payment.razorpayOrderId, razorpay.orderId);
   assert.equal(payment.paymentStatus, "PENDING");
@@ -707,4 +730,18 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
   });
   assert.equal(foreign.status, 404);
   assert.equal((foreign.body as { message?: string }).message, "Order not found");
+});
+
+test("order creation succeeds when the notification sender throws", async () => {
+  setNotificationSender(async () => {
+    throw new Error("FCM down");
+  });
+  assert.equal((await addToCart(customerAToken, productCId, 1)).status, 201);
+  const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
+  assert.equal(created.status, 201);
+  assert.ok(orderOf(created).id);
+  setNotificationSender(async (_tokens, payload) => {
+    orderNotificationCalls.push(payload);
+    return { invalidTokens: [] };
+  });
 });

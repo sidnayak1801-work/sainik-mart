@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { getMe, login, register } from "../services/auth.service";
+import { getMe, login, register, requestOtp, verifyOtp } from "../services/auth.service";
 import { AppError } from "../utils/AppError";
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
@@ -10,6 +10,16 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   const result = await login(req.body.identifier, req.body.password);
+  res.status(200).json({ success: true, data: result });
+};
+
+export const requestOtpCode = async (req: Request, res: Response): Promise<void> => {
+  const result = await requestOtp(req.body.identifier);
+  res.status(200).json({ success: true, data: result });
+};
+
+export const verifyOtpCode = async (req: Request, res: Response): Promise<void> => {
+  const result = await verifyOtp(req.body.identifier, req.body.code);
   res.status(200).json({ success: true, data: result });
 };
 

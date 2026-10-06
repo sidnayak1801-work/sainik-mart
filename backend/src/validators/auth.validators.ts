@@ -20,5 +20,16 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const otpRequestSchema = z.object({
+  identifier: z.string().trim().min(1),
+});
+
+export const otpVerifySchema = z.object({
+  identifier: z.string().trim().min(1),
+  code: z.string().regex(/^\d{6}$/, "Invalid code"),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
+export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;

@@ -63,7 +63,11 @@ const userMessageForStatus = (status: number, data: unknown): string => {
 };
 
 const isPublicAuthPath = (path: string): boolean => {
-  return path.startsWith("/api/auth/register") || path.startsWith("/api/auth/login");
+  return (
+    path.startsWith("/api/auth/register") ||
+    path.startsWith("/api/auth/login") ||
+    path.startsWith("/api/auth/otp")
+  );
 };
 
 const request = async <T>(method: HttpMethod, path: string, body?: unknown): Promise<T> => {
@@ -115,5 +119,5 @@ export const api = {
   get: <T>(path: string) => request<T>("GET", path),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
-  delete: <T>(path: string) => request<T>("DELETE", path),
+  delete: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
 };

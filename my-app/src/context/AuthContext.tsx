@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { getMe, login as loginRequest, register as registerRequest } from "@/api/auth";
+import { getMe, login as loginRequest, register as registerRequest, verifyOtp } from "@/api/auth";
 import { ApiError, setOnUnauthorized } from "@/api/client";
+import { registerPushForUser, subscribePushTokenRefresh, unregisterPushForUser } from "@/notifications/push";
 import { removeSelectedAddressId } from "@/storage/addressStorage";
 import { getToken, removeToken, setToken } from "@/storage/authStorage";
-import type { AuthState, LoginRequest, RegisterRequest, User } from "@/types/auth";
+import type { AuthState, LoginRequest, OtpVerifyRequest, RegisterRequest, User } from "@/types/auth";
 
 type AuthContextValue = AuthState & {
   login: (input: LoginRequest) => Promise<void>;
+  loginWithOtp: (input: OtpVerifyRequest) => Promise<void>;
   register: (input: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -54,8 +56,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void restoreSession();
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    void registerPushForUser();
+    const refresh = subscribePushTokenRefresh();
+    return () => refresh.remove();
+  }, [user]);
+
   const login = useCallback(async (input: LoginRequest) => {
     const result = await loginRequest(input);
+    const nextUser = await persistSession(result.user, result.accessToken);
+    setUser(nextUser);
+  }, []);
+
+  const loginWithOtp = useCallback(async (input: OtpVerifyRequest) => {
+    const result = await verifyOtp(input);
     const nextUser = await persistSession(result.user, result.accessToken);
     setUser(nextUser);
   }, []);
@@ -67,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    await unregisterPushForUser();
     await removeToken();
     await removeSelectedAddressId();
     setUser(null);
@@ -78,10 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user !== null,
       isLoading,
       login,
+      loginWithOtp,
       register,
       logout,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, loginWithOtp, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

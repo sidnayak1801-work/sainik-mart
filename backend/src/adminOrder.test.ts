@@ -4,8 +4,15 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { setNotificationSender, type NotificationPayload } from "./services/notification.service";
 import { setRazorpayOrdersClient } from "./services/razorpay.service";
 import { prisma } from "./utils/prisma";
+
+const adminNotificationCalls: NotificationPayload[] = [];
+const recordAdminNotifications = async (_tokens: string[], payload: NotificationPayload) => {
+  adminNotificationCalls.push(payload);
+  return { invalidTokens: [] };
+};
 
 setRazorpayOrdersClient({
   create: async ({ amount, currency, receipt }) => ({
@@ -116,6 +123,7 @@ const checkout = async (token: string, addressId: string) => {
 };
 
 before(async () => {
+  setNotificationSender(recordAdminNotifications);
   stamp = `${Date.now()}`;
   customerAEmail = `d27.a.${stamp}@example.com`;
   customerBEmail = `d27.b.${stamp}@example.com`;
@@ -195,6 +203,16 @@ before(async () => {
   });
   assert.equal(addressB.status, 201);
   addressBId = (addressB.body.data as { id: string }).id;
+
+  assert.equal(
+    (
+      await authJson(customerAToken, "POST", "/api/notifications/device-token", {
+        token: `d27-a-${stamp}`,
+        platform: "ANDROID",
+      })
+    ).status,
+    200,
+  );
 
   assert.equal((await addToCart(customerAToken, productId, 2)).status, 201);
   orderAPendingId = await checkout(customerAToken, addressAId);
@@ -350,12 +368,20 @@ test("admin status transitions follow the MVP path and reject illegal skips", as
   });
   assert.equal(skip.status, 400);
   assert.equal((skip.body as { message?: string }).message, "Invalid status transition");
+  const afterSkip = adminNotificationCalls.filter(
+    (payload) => payload.data.type === "ORDER_STATUS_UPDATED" && payload.data.orderId === orderAPendingId,
+  ).length;
 
   const confirmed = await authJson(adminToken, "PATCH", `/api/admin/orders/${orderAPendingId}/status`, {
     status: "CONFIRMED",
   });
   assert.equal(confirmed.status, 200);
   assert.equal((confirmed.body.data as AdminOrderDetail).orderStatus, "CONFIRMED");
+  const statusCalls = adminNotificationCalls.filter(
+    (payload) => payload.data.type === "ORDER_STATUS_UPDATED" && payload.data.orderId === orderAPendingId,
+  );
+  assert.equal(statusCalls.length, afterSkip + 1);
+  assert.equal(statusCalls.at(-1)?.data.status, "CONFIRMED");
 
   const packing = await authJson(adminToken, "PATCH", `/api/admin/orders/${orderAPendingId}/status`, {
     status: "PACKING",

@@ -11,6 +11,9 @@
       "icon": "./assets/images/icon.png"
     },
     "android": {
+      "package": "in.sainikmart.app",
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0C3F24",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -23,6 +26,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-notifications",
       "expo-secure-store",
       [
         "expo-splash-screen",
@@ -32,6 +36,12 @@
           "imageWidth": 220
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bcb3837d-294b-4c0c-a56f-ae3537a83a41"
+      }
+    },
+    "owner": "devsid18"
   }
 }

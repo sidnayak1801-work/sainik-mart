@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { requestOtp } from "@/api/auth";
 import { Button } from "@/components/Button";
-import { BrandLogo } from "@/components/BrandLogo";
+import { AuthScreenChrome, AuthTextLink } from "@/components/AuthScreenChrome";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { Input } from "@/components/Input";
-import { Screen } from "@/components/Screen";
 import { toAuthErrorMessage, useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { continueAfterAuth } from "@/navigation/authRedirect";
@@ -24,8 +24,9 @@ export function LoginScreen({ navigation, route }: Props) {
   const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [requestingCode, setRequestingCode] = useState(false);
 
-  const validate = (): boolean => {
+  const validatePasswordLogin = (): boolean => {
     const next: { identifier?: string; password?: string } = {};
     if (!identifier.trim()) next.identifier = "Email or phone is required.";
     if (!password) next.password = "Password is required.";
@@ -34,9 +35,9 @@ export function LoginScreen({ navigation, route }: Props) {
   };
 
   const onSubmit = async () => {
-    if (submitting) return;
+    if (submitting || requestingCode) return;
     setFormError(null);
-    if (!validate()) return;
+    if (!validatePasswordLogin()) return;
 
     setSubmitting(true);
     try {
@@ -50,13 +51,54 @@ export function LoginScreen({ navigation, route }: Props) {
     }
   };
 
+  const onUseCode = async () => {
+    if (submitting || requestingCode) return;
+    setFormError(null);
+    if (!identifier.trim()) {
+      setFieldErrors({ identifier: "Email or phone is required." });
+      return;
+    }
+    setFieldErrors({});
+
+    setRequestingCode(true);
+    try {
+      const result = await requestOtp(identifier.trim());
+      navigation.navigate("VerifyCode", {
+        identifier: identifier.trim(),
+        redirect,
+        expiresInSec: result.expiresInSec,
+        devCode: result.devCode,
+      });
+    } catch (error) {
+      setFormError(toAuthErrorMessage(error));
+    } finally {
+      setRequestingCode(false);
+    }
+  };
+
   return (
-    <Screen>
-      <View style={styles.brand}>
-        <BrandLogo size="lg" />
-      </View>
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.subtitle}>Sign in with your email or phone.</Text>
+    <AuthScreenChrome
+      title="Login"
+      subtitle="Sign in with your email or phone."
+      logo
+      onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      footer={
+        <View style={styles.links}>
+          <AuthTextLink
+            prompt="Don't have an account?"
+            action="Register"
+            onPress={() => navigation.navigate("Register", redirect ? { redirect } : undefined)}
+            disabled={submitting || requestingCode}
+          />
+          <AuthTextLink
+            prompt=""
+            action="Use 6-digit code"
+            onPress={() => void onUseCode()}
+            disabled={submitting || requestingCode}
+          />
+        </View>
+      }
+    >
       <Input
         label="Email or phone"
         placeholder="email or phone"
@@ -79,29 +121,19 @@ export function LoginScreen({ navigation, route }: Props) {
         textContentType="password"
       />
       {formError ? <ErrorMessage message={formError} /> : null}
-      <Button title="Login" onPress={() => void onSubmit()} loading={submitting} disabled={submitting} />
       <Button
-        title="Don't have an account? Register"
-        onPress={() => navigation.navigate("Register", redirect ? { redirect } : undefined)}
-        variant="ghost"
+        title="Login"
+        onPress={() => void onSubmit()}
+        loading={submitting}
+        disabled={submitting || requestingCode}
       />
-    </Screen>
+    </AuthScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  brand: {
-    alignItems: "center",
-    marginBottom: theme.spacing.sm,
-  },
-  title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  subtitle: {
-    fontSize: theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+  links: {
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
   },
 });
