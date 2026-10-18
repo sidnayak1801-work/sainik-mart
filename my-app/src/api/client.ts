@@ -66,7 +66,11 @@ const isPublicAuthPath = (path: string): boolean => {
   return (
     path.startsWith("/api/auth/register") ||
     path.startsWith("/api/auth/login") ||
-    path.startsWith("/api/auth/otp")
+    path.startsWith("/api/auth/send-otp") ||
+    path.startsWith("/api/auth/resend-otp") ||
+    path.startsWith("/api/auth/verify-otp") ||
+    path.startsWith("/api/auth/verify-widget") ||
+    path.startsWith("/api/auth/logout")
   );
 };
 

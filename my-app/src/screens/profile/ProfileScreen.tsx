@@ -27,8 +27,8 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={styles.tagline}>{APP_TAGLINE}</Text>
         {user ? (
           <>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.meta}>{user.email}</Text>
+            <Text style={styles.name}>{user.name || "Sainik Mart customer"}</Text>
+            {user.email ? <Text style={styles.meta}>{user.email}</Text> : null}
             <Text style={styles.meta}>{user.phone}</Text>
           </>
         ) : (
@@ -49,13 +49,8 @@ export function ProfileScreen({ navigation }: Props) {
           <>
             <MenuRow
               icon="log-in-outline"
-              label="Sign in"
+              label="Continue with mobile number"
               onPress={() => navigation.navigate("Login", { redirect: "Profile" })}
-            />
-            <MenuRow
-              icon="person-add-outline"
-              label="Create account"
-              onPress={() => navigation.navigate("Register", { redirect: "Profile" })}
             />
           </>
         )}

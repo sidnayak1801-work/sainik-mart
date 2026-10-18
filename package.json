@@ -10,5 +10,8 @@
     "admin": "npm run dev --prefix admin",
     "eas:preview": "npm exec --prefix my-app -- eas-cli build --platform android --profile preview",
     "eas:production": "npm exec --prefix my-app -- eas-cli build --platform android --profile production"
+  },
+  "dependencies": {
+    "libphonenumber-js": "^1.13.14"
   }
 }

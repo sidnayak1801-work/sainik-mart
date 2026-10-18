@@ -341,8 +341,8 @@ export function CheckoutScreen({ navigation, route }: Props) {
         visible={Boolean(payOrder?.razorpay)}
         checkout={payOrder?.razorpay ?? null}
         prefill={{
-          name: user?.name,
-          email: user?.email,
+          name: user?.name ?? undefined,
+          email: user?.email ?? undefined,
           contact: razorpayContact(user?.phone),
         }}
         onSuccess={(result) => void onPaymentSuccess(result)}

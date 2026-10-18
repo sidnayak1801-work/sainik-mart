@@ -10,7 +10,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.sainikmartapp.in"
+        "EXPO_PUBLIC_API_URL": "https://api.sainikmartapp.in",
+        "EXPO_PUBLIC_MSG91_WIDGET_ID": "366a6a677531333531303937"
       }
     },
     "production": {
@@ -18,7 +19,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.sainikmartapp.in"
+        "EXPO_PUBLIC_API_URL": "https://api.sainikmartapp.in",
+        "EXPO_PUBLIC_MSG91_WIDGET_ID": "366a6a677531333531303937"
       }
     }
   },

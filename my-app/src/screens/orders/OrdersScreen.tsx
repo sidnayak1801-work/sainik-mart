@@ -95,14 +95,9 @@ export function OrdersScreen({ navigation }: Props) {
           <EmptyState
             centered
             title="Sign in to see orders"
-            description="Log in or create an account to track your grocery orders."
+            description="Continue with your mobile number to track grocery orders."
           />
-          <Button title="Login" onPress={() => navigation.navigate("Login", { redirect: "Orders" })} />
-          <Button
-            title="Register"
-            variant="ghost"
-            onPress={() => navigation.navigate("Register", { redirect: "Orders" })}
-          />
+          <Button title="Continue with mobile number" onPress={() => navigation.navigate("Login", { redirect: "Orders" })} />
         </View>
       ) : null}
       {isAuthenticated && isEmpty ? (

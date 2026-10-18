@@ -1,16 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { getMe, login as loginRequest, register as registerRequest, verifyOtp } from "@/api/auth";
+import { getMe, logout as logoutRequest, verifyWidget } from "@/api/auth";
 import { ApiError, setOnUnauthorized } from "@/api/client";
 import { registerPushForUser, subscribePushTokenRefresh, unregisterPushForUser } from "@/notifications/push";
 import { removeSelectedAddressId } from "@/storage/addressStorage";
 import { getToken, removeToken, setToken } from "@/storage/authStorage";
-import type { AuthState, LoginRequest, OtpVerifyRequest, RegisterRequest, User } from "@/types/auth";
+import type { AuthState, User } from "@/types/auth";
 
 type AuthContextValue = AuthState & {
-  login: (input: LoginRequest) => Promise<void>;
-  loginWithOtp: (input: OtpVerifyRequest) => Promise<void>;
-  register: (input: RegisterRequest) => Promise<void>;
+  loginWithWidgetToken: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -65,26 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => refresh.remove();
   }, [user]);
 
-  const login = useCallback(async (input: LoginRequest) => {
-    const result = await loginRequest(input);
-    const nextUser = await persistSession(result.user, result.accessToken);
-    setUser(nextUser);
-  }, []);
-
-  const loginWithOtp = useCallback(async (input: OtpVerifyRequest) => {
-    const result = await verifyOtp(input);
-    const nextUser = await persistSession(result.user, result.accessToken);
-    setUser(nextUser);
-  }, []);
-
-  const register = useCallback(async (input: RegisterRequest) => {
-    const result = await registerRequest(input);
+  const loginWithWidgetToken = useCallback(async (accessToken: string) => {
+    const result = await verifyWidget(accessToken);
     const nextUser = await persistSession(result.user, result.accessToken);
     setUser(nextUser);
   }, []);
 
   const logout = useCallback(async () => {
     await unregisterPushForUser();
+    try {
+      await logoutRequest();
+    } catch {
+      // Client session must still clear if the network call fails.
+    }
     await removeToken();
     await removeSelectedAddressId();
     setUser(null);
@@ -95,12 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: user !== null,
       isLoading,
-      login,
-      loginWithOtp,
-      register,
+      loginWithWidgetToken,
       logout,
     }),
-    [user, isLoading, login, loginWithOtp, register, logout],
+    [user, isLoading, loginWithWidgetToken, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -114,8 +103,25 @@ export const useAuth = (): AuthContextValue => {
   return value;
 };
 
+const OTP_MESSAGES: Record<string, string> = {
+  INVALID_PHONE_NUMBER: "Please enter a valid mobile number.",
+  OTP_SEND_FAILED: "We couldn't send the OTP. Please try again.",
+  OTP_PROVIDER_ERROR: "We couldn't send the OTP. Please try again.",
+  OTP_RATE_LIMITED: "Please wait before requesting another OTP.",
+  OTP_COOLDOWN: "Please wait before requesting another OTP.",
+  INVALID_OTP: "Incorrect OTP. Please try again.",
+  OTP_EXPIRED: "This OTP has expired. Please request a new OTP.",
+  OTP_ATTEMPTS_EXCEEDED: "Too many attempts. Please request a new OTP.",
+};
+
 export const toAuthErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
+    if (error.data && typeof error.data === "object" && "code" in error.data) {
+      const code = (error.data as { code?: string }).code;
+      if (code && OTP_MESSAGES[code]) {
+        return OTP_MESSAGES[code];
+      }
+    }
     return error.message;
   }
   if (error instanceof Error && error.message) {

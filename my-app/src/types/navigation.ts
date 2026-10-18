@@ -6,17 +6,8 @@ export type AuthRedirect = "Checkout" | "Orders" | "AddressList" | "Profile";
 
 export type AuthScreenParams = { redirect?: AuthRedirect } | undefined;
 
-export type VerifyCodeParams = {
-  identifier: string;
-  redirect?: AuthRedirect;
-  expiresInSec?: number;
-  devCode?: string;
-};
-
 export type AuthStackParamList = {
   Login: AuthScreenParams;
-  Register: AuthScreenParams;
-  VerifyCode: VerifyCodeParams;
 };
 
 export type MainTabParamList = {
@@ -42,8 +33,6 @@ export type MainStackParamList = {
   EditAddress: { addressId: string; address: Address };
   OrderConfirmation: { order: CreatedOrder };
   Login: AuthScreenParams;
-  Register: AuthScreenParams;
-  VerifyCode: VerifyCodeParams;
   About: undefined;
   Terms: undefined;
   Privacy: undefined;

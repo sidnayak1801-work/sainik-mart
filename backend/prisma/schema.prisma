@@ -35,11 +35,12 @@ enum DevicePlatform {
 
 model User {
   id           String   @id @default(uuid()) @db.Uuid
-  name         String   @db.VarChar(120)
-  email        String   @unique @db.VarChar(255)
+  name         String?  @db.VarChar(120)
+  email        String?  @unique @db.VarChar(255)
   phone        String   @unique @db.VarChar(20)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
+  passwordHash String?  @map("password_hash") @db.VarChar(255)
   role         Role     @default(CUSTOMER)
+  isVerified   Boolean  @default(false) @map("is_verified")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -72,10 +73,12 @@ model AuthOtp {
   codeHash   String    @map("code_hash") @db.VarChar(255)
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
   consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(6)
   attempts   Int       @default(0)
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([identifier])
+  @@index([expiresAt])
   @@map("auth_otps")
 }
 

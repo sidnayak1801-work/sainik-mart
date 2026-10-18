@@ -2,39 +2,24 @@ export type UserRole = "CUSTOMER" | "ADMIN";
 
 export type User = {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   phone: string;
   role: UserRole;
+  isVerified: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
-export type LoginRequest = {
-  identifier: string;
-  password: string;
-};
-
 export type OtpVerifyRequest = {
-  identifier: string;
-  code: string;
-};
-
-export type OtpRequestPayload = {
-  expiresInSec: number;
-  devCode?: string;
-};
-
-export type RegisterRequest = {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
+  phoneNumber: string;
+  otp: string;
 };
 
 export type AuthPayload = {
   user: User;
   accessToken: string;
+  isNewUser: boolean;
 };
 
 export type MePayload = {

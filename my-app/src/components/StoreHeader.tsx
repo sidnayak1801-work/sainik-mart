@@ -126,8 +126,8 @@ export function StoreHeader() {
             <View style={styles.drawerHeader}>
               <Ionicons name="person-circle-outline" size={40} color={theme.colors.textSecondary} />
               <View style={styles.drawerHello}>
-                <Text style={styles.helloTitle}>{user ? `Hello ${user.name}` : "Hello Guest"}</Text>
-                <Text style={styles.helloSubtitle}>{user ? user.email : "Login to proceed"}</Text>
+                <Text style={styles.helloTitle}>{user ? `Hello ${user.name || "there"}` : "Hello Guest"}</Text>
+                <Text style={styles.helloSubtitle}>{user ? user.phone : "Login to proceed"}</Text>
               </View>
             </View>
 

@@ -9,8 +9,6 @@ import { EditAddressScreen } from "@/screens/address/EditAddressScreen";
 import { CartScreen } from "@/screens/cart/CartScreen";
 import { CategoriesScreen } from "@/screens/category/CategoriesScreen";
 import { LoginScreen } from "@/screens/auth/LoginScreen";
-import { RegisterScreen } from "@/screens/auth/RegisterScreen";
-import { VerifyCodeScreen } from "@/screens/auth/VerifyCodeScreen";
 import { CheckoutScreen } from "@/screens/checkout/CheckoutScreen";
 import { OrderConfirmationScreen } from "@/screens/checkout/OrderConfirmationScreen";
 import { HomeScreen } from "@/screens/home/HomeScreen";
@@ -119,8 +117,6 @@ export function MainNavigator() {
         options={{ title: "Order Placed", headerBackVisible: false }}
       />
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="About" component={InfoScreen} options={{ title: "About Sainik Mart" }} />
       <Stack.Screen name="Terms" component={InfoScreen} options={{ title: "Terms and Conditions" }} />
       <Stack.Screen name="Privacy" component={InfoScreen} options={{ title: "Privacy Policy" }} />

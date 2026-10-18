@@ -64,20 +64,13 @@ const isPublicAuthPath = (path: string): boolean => {
   return path.startsWith("/api/auth/register") || path.startsWith("/api/auth/login");
 };
 
-const apiBaseUrl = (): string => {
-  const value = import.meta.env.VITE_API_URL ?? "";
-  return value.replace(/\/$/, "");
-};
+const PRODUCTION_API_URL = "https://api.sainikmartapp.in";
+const DEV_API_URL = "http://localhost:4000";
 
 const resolveBaseUrl = (): string => {
-  const base = apiBaseUrl();
-  if (!base) {
-    throw new ApiError(
-      "API URL is not configured. Set VITE_API_URL in admin/.env and restart the admin app.",
-      0,
-    );
-  }
-  return base;
+  const configured = import.meta.env.VITE_API_URL?.trim();
+  const value = configured || (import.meta.env.PROD ? PRODUCTION_API_URL : DEV_API_URL);
+  return value.replace(/\/$/, "");
 };
 
 const parseResponse = async <T>(response: Response, token: string | null): Promise<T> => {

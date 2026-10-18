@@ -1,57 +1,42 @@
-import type {
-  ApiSuccess,
-  AuthPayload,
-  LoginRequest,
-  MePayload,
-  OtpRequestPayload,
-  OtpVerifyRequest,
-  RegisterRequest,
-  User,
-} from "@/types/auth";
+import type { ApiSuccess, AuthPayload, MePayload, OtpVerifyRequest, User } from "@/types/auth";
 
 import { api, ApiError } from "./client";
 
-export const login = async (body: LoginRequest): Promise<AuthPayload> => {
-  try {
-    const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/login", body);
-    return response.data;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      throw new ApiError("Invalid email or password.", 401, error.data);
-    }
-    throw error;
-  }
+export const sendOtp = async (phoneNumber: string): Promise<{ message: string }> => {
+  const response = await api.post<ApiSuccess<{ message: string }>>("/api/auth/send-otp", {
+    phoneNumber,
+  });
+  return response.data;
 };
 
-export const requestOtp = async (identifier: string): Promise<OtpRequestPayload> => {
-  try {
-    const response = await api.post<ApiSuccess<OtpRequestPayload>>("/api/auth/otp/request", {
-      identifier,
-    });
-    return response.data;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      throw new ApiError("No account found for this email or phone.", 401, error.data);
-    }
-    throw error;
-  }
+export const resendOtp = async (phoneNumber: string): Promise<{ message: string }> => {
+  const response = await api.post<ApiSuccess<{ message: string }>>("/api/auth/resend-otp", {
+    phoneNumber,
+  });
+  return response.data;
 };
 
 export const verifyOtp = async (body: OtpVerifyRequest): Promise<AuthPayload> => {
+  const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/verify-otp", body);
+  return response.data;
+};
+
+export const verifyWidget = async (accessToken: string): Promise<AuthPayload> => {
+  const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/verify-widget", {
+    accessToken,
+  });
+  return response.data;
+};
+
+export const logout = async (): Promise<void> => {
   try {
-    const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/otp/verify", body);
-    return response.data;
+    await api.post<ApiSuccess<{ loggedOut: true }>>("/api/auth/logout");
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      throw new ApiError("Invalid or expired code.", 401, error.data);
+    if (error instanceof ApiError && error.status === 0) {
+      return;
     }
     throw error;
   }
-};
-
-export const register = async (body: RegisterRequest): Promise<AuthPayload> => {
-  const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/register", body);
-  return response.data;
 };
 
 export const getMe = async (): Promise<User> => {

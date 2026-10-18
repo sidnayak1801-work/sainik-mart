@@ -2,10 +2,11 @@ import type { Role } from "@prisma/client";
 
 export type PublicUser = {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   phone: string;
   role: Role;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

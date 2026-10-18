@@ -20,16 +20,21 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const otpRequestSchema = z.object({
-  identifier: z.string().trim().min(1),
+export const sendOtpSchema = z.object({
+  phoneNumber: z.string().trim().min(1),
 });
 
-export const otpVerifySchema = z.object({
-  identifier: z.string().trim().min(1),
-  code: z.string().regex(/^\d{6}$/, "Invalid code"),
+export const verifyOtpSchema = z.object({
+  phoneNumber: z.string().trim().min(1),
+  otp: z.string().regex(/^\d{6}$/, "Invalid code"),
+});
+
+export const verifyWidgetSchema = z.object({
+  accessToken: z.string().trim().min(1),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
-export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
-export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+export type SendOtpInput = z.infer<typeof sendOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type VerifyWidgetInput = z.infer<typeof verifyWidgetSchema>;

@@ -45,6 +45,9 @@ const resolveApiUrl = (): string => {
 
 export const API_URL = resolveApiUrl();
 
+export const MSG91_WIDGET_ID = (process.env.EXPO_PUBLIC_MSG91_WIDGET_ID ?? "").trim();
+export const MSG91_WIDGET_AUTH_TOKEN = (process.env.EXPO_PUBLIC_MSG91_WIDGET_AUTH_TOKEN ?? "").trim();
+
 export const APP_NAME = "Sainik Mart";
 export const APP_TAGLINE = "Har zaroorat, ek jagah";
 export const SUPPORT_EMAIL = "hello@sainikmart.in";
