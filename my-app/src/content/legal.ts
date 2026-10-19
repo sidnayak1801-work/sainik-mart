@@ -63,19 +63,19 @@ export const LEGAL_PAGES: Record<"About" | "Terms" | "Privacy", LegalPage> = {
     sections: [
       {
         heading: "What we collect",
-        body: "When you register we store your name, email, phone, and password hash. Guest carts stay on your device until you sign in. After login we store cart lines, delivery addresses, and order history so you can check out and track deliveries.",
+        body: "When you sign in we store your mobile number (and name or email if provided). After login we store cart lines, delivery addresses, order history, and an optional push-notification device token. Payments go through Razorpay; we store payment status and Razorpay ids, not full card numbers. Login OTPs are sent via MSG91.",
       },
       {
         heading: "How we use it",
-        body: "We use this information to fulfil orders, show you your cart and past purchases, contact you about a delivery, and keep the app secure. Support messages you send from Contact Us go to our inbox via your mail app.",
+        body: "We use this information to fulfil orders, show you your cart and past purchases, send order updates, and keep the app secure. Support messages you send from Contact Us go to our inbox via your mail app.",
       },
       {
         heading: "Sharing",
-        body: "We share order and address details with delivery partners only as needed to complete a delivery. We do not sell lists of customers. Legal requests may require us to disclose data when the law requires it.",
+        body: "We share order and address details with delivery partners only as needed to complete a delivery. Razorpay and MSG91 process payments and OTPs. We do not sell lists of customers. Legal requests may require us to disclose data when the law requires it.",
       },
       {
         heading: "Retention and your choices",
-        body: "You can update addresses in the app and sign out at any time. Guest cart data lives on your device. To correct account details or ask us to delete an account, use Contact Us. We keep order records as required for accounts and tax.",
+        body: "You can update addresses in the app and sign out at any time. Guest cart data lives on your device. Delete your account from Profile → Delete account, or email hello@sainikmart.in. That removes your login, cart, unused addresses, and device tokens. We keep anonymised order records as required for accounts and tax. Full policy: https://api.sainikmartapp.in/api/privacy",
       },
     ],
   },

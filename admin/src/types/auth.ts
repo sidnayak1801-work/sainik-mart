@@ -11,7 +11,7 @@ export type User = {
 };
 
 export type LoginRequest = {
-  identifier: string;
+  email: string;
   password: string;
 };
 

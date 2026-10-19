@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -18,7 +18,26 @@ type Props = CompositeScreenProps<
 >;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, deleteAccount, isAuthenticated } = useAuth();
+
+  const onDeleteAccount = () => {
+    Alert.alert(
+      "Delete account?",
+      "This removes your login, cart, and unused addresses. Past orders are kept in anonymised form.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void deleteAccount().catch(() => {
+              Alert.alert("Could not delete account", "Please try again or email hello@sainikmart.in.");
+            });
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <Screen padded={false}>
@@ -61,6 +80,7 @@ export function ProfileScreen({ navigation }: Props) {
       {isAuthenticated ? (
         <View style={styles.menu}>
           <MenuRow icon="log-out-outline" label="Sign out" danger onPress={() => void logout()} />
+          <MenuRow icon="trash-outline" label="Delete account" danger onPress={onDeleteAccount} />
         </View>
       ) : null}
     </Screen>

@@ -42,13 +42,27 @@ DB ping: `GET http://localhost:4000/health`
 
 ## Auth
 
-| Method | Path                 | Auth                | Body                                      |
-| ------ | -------------------- | ------------------- | ----------------------------------------- |
-| `POST` | `/api/auth/register` | No                  | `name`, `email`, `phone`, `password`      |
-| `POST` | `/api/auth/login`    | No                  | `identifier` (email or phone), `password` |
-| `GET`  | `/api/auth/me`       | Bearer access token | —                                         |
+| Method | Path                      | Auth                | Body                                      |
+| ------ | ------------------------- | ------------------- | ----------------------------------------- |
+| `POST` | `/api/auth/register`      | No                  | `name`, `email`, `phone`, `password`      |
+| `POST` | `/api/auth/login`         | No                  | `identifier` (email or phone), `password` |
+| `POST` | `/api/auth/admin/login`   | No                  | `email`, `password` (ADMIN only)          |
+| `GET`  | `/api/auth/me`            | Bearer access token | —                                         |
 
-Register always creates a `CUSTOMER`. Login and register return `{ success: true, data: { user, accessToken } }`. `GET /me` returns `{ success: true, data: { user } }`. `passwordHash` is never returned.
+Register always creates a `CUSTOMER`. There is no public admin registration. `POST /api/auth/admin/login` issues a JWT only when the user is `ADMIN` with a password hash; customers, unknown emails, and bad passwords all return **401 Invalid credentials**. That route is limited to 10 attempts per IP per 15 minutes (**429**). Generic `/api/auth/login` remains for tests and password customers. Login and register return `{ success: true, data: { user, accessToken } }`. `GET /me` returns `{ success: true, data: { user } }`. `passwordHash` is never returned.
+
+### First admin (one-time provision)
+
+Set these on the **API host only** (never in admin `VITE_` variables): `ADMIN_EMAIL`, `ADMIN_PASSWORD` (8+ chars), `ADMIN_PHONE` (required; `users.phone` is unique), optional `ADMIN_NAME`.
+
+```bash
+cd backend
+npm run admin:provision
+```
+
+If that email already exists, the script **exits 0 and does not change password or role**. Safe to run on deploy. It is not hooked to `prisma db seed`.
+
+If the email exists as `CUSTOMER` and you need an admin, promote in SQL and set `password_hash` yourself — the provisioner will not overwrite a live password.
 
 Authenticated requests send `Authorization: Bearer <accessToken>`. Middleware verifies the JWT, then loads the user from PostgreSQL so `CUSTOMER` / `ADMIN` comes from the live `users.role` (not a stale token). Missing/invalid tokens return **401**. Wrong role returns **403 Forbidden**.
 
@@ -152,7 +166,7 @@ Response:
 
 | Access | Routes |
 | --- | --- |
-| Public (no token) | `POST /api/auth/register`, `POST /api/auth/login`, `GET /health`, `GET /api/health`, `GET /api/categories`, `GET /api/categories/:id`, `GET /api/products`, `GET /api/products/:id` |
+| Public (no token) | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/admin/login`, `GET /health`, `GET /api/health`, `GET /api/categories`, `GET /api/categories/:id`, `GET /api/products`, `GET /api/products/:id` |
 | Authenticated (`CUSTOMER` or `ADMIN`) | `GET /api/auth/me`; cart (`GET /api/cart`, `POST /api/cart/items`, `PATCH\|DELETE /api/cart/items/:id`); addresses (`GET\|POST /api/addresses`, `PATCH\|DELETE /api/addresses/:id`); customer orders (`POST\|GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders/:id/cancel`) |
 | `ADMIN` only | `POST\|PATCH\|DELETE /api/categories`, `POST\|PATCH\|DELETE /api/products`, `PATCH /api/admin/orders/:id/status` |
 
@@ -173,6 +187,7 @@ Address and order **business logic** is not implemented yet (those handlers retu
 | `npm run prisma:generate`       | Generate Prisma Client                       |
 | `npm run prisma:migrate`        | Create and apply migrations (`migrate dev`)  |
 | `npm run prisma:migrate:deploy` | Apply existing migrations (`migrate deploy`) |
+| `npm run admin:provision`       | Create the first ADMIN if missing (never resets an existing password) |
 
 ## Notes
 

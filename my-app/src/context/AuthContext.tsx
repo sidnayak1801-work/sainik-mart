@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { getMe, logout as logoutRequest, verifyWidget } from "@/api/auth";
+import { deleteAccount as deleteAccountRequest, getMe, logout as logoutRequest, verifyWidget } from "@/api/auth";
 import { ApiError, setOnUnauthorized } from "@/api/client";
 import { registerPushForUser, subscribePushTokenRefresh, unregisterPushForUser } from "@/notifications/push";
 import { removeSelectedAddressId } from "@/storage/addressStorage";
@@ -10,6 +10,7 @@ import type { AuthState, User } from "@/types/auth";
 type AuthContextValue = AuthState & {
   loginWithWidgetToken: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -81,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await unregisterPushForUser();
+    await deleteAccountRequest();
+    await removeToken();
+    await removeSelectedAddressId();
+    setUser(null);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -88,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       loginWithWidgetToken,
       logout,
+      deleteAccount,
     }),
-    [user, isLoading, loginWithWidgetToken, logout],
+    [user, isLoading, loginWithWidgetToken, logout, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

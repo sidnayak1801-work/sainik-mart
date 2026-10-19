@@ -43,3 +43,7 @@ export const getMe = async (): Promise<User> => {
   const response = await api.get<ApiSuccess<MePayload>>("/api/auth/me");
   return response.data.user;
 };
+
+export const deleteAccount = async (): Promise<void> => {
+  await api.delete<ApiSuccess<{ deleted: true }>>("/api/auth/account");
+};

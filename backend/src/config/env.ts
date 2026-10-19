@@ -80,6 +80,25 @@ if (!parsed.success) {
   throw new Error(`Invalid environment variables: ${details}.${hint}`);
 }
 
+const assertDatabaseUrl = (url: string): void => {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error(
+      "DATABASE_URL is not a valid URL. Quote DATABASE_URL and percent-encode @ and # in the password.",
+    );
+  }
+
+  if (/^\d+$/.test(parsedUrl.hostname)) {
+    throw new Error(
+      "DATABASE_URL is malformed (hostname looks like a truncated password). Quote DATABASE_URL and percent-encode @ and # in the password.",
+    );
+  }
+};
+
+assertDatabaseUrl(parsed.data.DATABASE_URL);
+
 export const env = {
   ...parsed.data,
   OTP_HMAC_SECRET: parsed.data.OTP_HMAC_SECRET ?? parsed.data.JWT_ACCESS_SECRET,

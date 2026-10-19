@@ -1,6 +1,16 @@
 import type { Request, Response } from "express";
 
-import { getMe, login, register, resendOtp, sendOtp, verifyOtp, verifyWidget } from "../services/auth.service";
+import {
+  deleteAccount,
+  getMe,
+  login,
+  loginAdmin,
+  register,
+  resendOtp,
+  sendOtp,
+  verifyOtp,
+  verifyWidget,
+} from "../services/auth.service";
 import { AppError } from "../utils/AppError";
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
@@ -10,6 +20,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   const result = await login(req.body.identifier, req.body.password);
+  res.status(200).json({ success: true, data: result });
+};
+
+export const loginAdminUser = async (req: Request, res: Response): Promise<void> => {
+  const result = await loginAdmin(req.body.email, req.body.password);
   res.status(200).json({ success: true, data: result });
 };
 
@@ -44,4 +59,13 @@ export const getCurrentUser = async (req: Request, res: Response): Promise<void>
 
   const user = await getMe(req.user.id);
   res.status(200).json({ success: true, data: { user } });
+};
+
+export const deleteCurrentUser = async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Authentication required", 401);
+  }
+
+  await deleteAccount(req.user.id);
+  res.status(200).json({ success: true, data: { deleted: true } });
 };

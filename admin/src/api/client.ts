@@ -42,6 +42,7 @@ const isSafeUserMessage = (message: string): boolean => {
 const userMessageForStatus = (status: number, data: unknown): string => {
   if (status === 401) return "Please sign in again.";
   if (status === 403) return "You do not have access to this action.";
+  if (status === 429) return "Too many login attempts. Please wait and try again.";
   if (status === 404) return "The requested resource was not found.";
   if (status === 501) {
     if (isErrorBody(data) && typeof data.message === "string" && isSafeUserMessage(data.message)) {
@@ -61,7 +62,11 @@ const userMessageForStatus = (status: number, data: unknown): string => {
 };
 
 const isPublicAuthPath = (path: string): boolean => {
-  return path.startsWith("/api/auth/register") || path.startsWith("/api/auth/login");
+  return (
+    path.startsWith("/api/auth/register") ||
+    path === "/api/auth/login" ||
+    path.startsWith("/api/auth/admin/login")
+  );
 };
 
 const PRODUCTION_API_URL = "https://api.sainikmartapp.in";

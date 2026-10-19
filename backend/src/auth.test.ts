@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { resetLoginIpLimit } from "./middleware/loginIpLimit";
 import { failNextMockOtpSend, getLastMockOtp, resetMockOtps } from "./services/otp";
 import { setMsg91WidgetVerifierForTests } from "./services/otp/msg91.widget";
 import { AppError } from "./utils/AppError";
@@ -202,6 +203,73 @@ test("login succeeds with JWT and rejects bad credentials", async () => {
     identifier: customerEmail,
   });
   assert.equal(missingPassword.status, 400);
+});
+
+test("POST /api/auth/admin/login accepts ADMIN and rejects everyone else", async () => {
+  resetLoginIpLimit();
+  const adminEmail = `d14.adminlogin.${stamp}@example.com`;
+  const adminPhone = `+86${stamp.slice(-10)}`;
+  const registered = await json("POST", "/api/auth/register", {
+    name: "Day14 Admin Login",
+    email: adminEmail,
+    phone: adminPhone,
+    password: "password123",
+  });
+  assert.equal(registered.status, 201);
+  await prisma.user.update({ where: { email: adminEmail }, data: { role: "ADMIN" } });
+
+  const success = await json("POST", "/api/auth/admin/login", {
+    email: adminEmail,
+    password: "password123",
+  });
+  assert.equal(success.status, 200);
+  const data = success.body.data as AuthData;
+  assert.ok(data.accessToken);
+  assert.equal(data.user.role, "ADMIN");
+  assertNoPasswordHash(success.body);
+
+  const customerDenied = await json("POST", "/api/auth/admin/login", {
+    email: customerEmail,
+    password: "password123",
+  });
+  assert.equal(customerDenied.status, 401);
+  assert.equal(customerDenied.body.message, "Invalid credentials");
+
+  const unknown = await json("POST", "/api/auth/admin/login", {
+    email: `d14.missing.admin.${stamp}@example.com`,
+    password: "password123",
+  });
+  assert.equal(unknown.status, 401);
+  assert.equal(unknown.body.message, "Invalid credentials");
+
+  const shortPassword = await json("POST", "/api/auth/admin/login", {
+    email: adminEmail,
+    password: "123",
+  });
+  assert.equal(shortPassword.status, 400);
+
+  const missingEmail = await json("POST", "/api/auth/admin/login", {
+    password: "password123",
+  });
+  assert.equal(missingEmail.status, 400);
+});
+
+test("POST /api/auth/admin/login is rate limited per IP", async () => {
+  resetLoginIpLimit();
+  const email = `d14.ratelimit.${stamp}@example.com`;
+  for (let i = 0; i < 10; i += 1) {
+    const denied = await json("POST", "/api/auth/admin/login", {
+      email,
+      password: "password123",
+    });
+    assert.equal(denied.status, 401);
+  }
+  const limited = await json("POST", "/api/auth/admin/login", {
+    email,
+    password: "password123",
+  });
+  assert.equal(limited.status, 429);
+  assert.equal(limited.body.code, "LOGIN_RATE_LIMITED");
 });
 
 test("GET /api/auth/me requires a valid JWT", async () => {
@@ -525,6 +593,80 @@ test("POST /api/auth/logout returns success", async () => {
   const result = await json("POST", "/api/auth/logout");
   assert.equal(result.status, 200);
   assert.equal(result.body.success, true);
+});
+
+test("GET /privacy and /account-deletion serve Play listing pages", async () => {
+  for (const path of ["/privacy", "/api/privacy", "/account-deletion", "/api/account-deletion", "/terms", "/api/terms"]) {
+    const response = await fetch(`${baseUrl}${path}`);
+    const text = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /html/);
+    assert.match(text, /Sainik Mart/);
+  }
+});
+
+test("DELETE /api/auth/account anonymizes a customer and rejects admin", async () => {
+  const phone = indianPhone("8", "7");
+  const registered = await json("POST", "/api/auth/register", {
+    name: "Day14 Delete Me",
+    email: `d14.delete.${stamp}@example.com`,
+    phone,
+    password: "password123",
+  });
+  assert.equal(registered.status, 201);
+  const token = (registered.body.data as AuthData).accessToken;
+  const userId = (registered.body.data as AuthData).user.id;
+
+  const missing = await json("DELETE", "/api/auth/account");
+  assert.equal(missing.status, 401);
+
+  const deleted = await json("DELETE", "/api/auth/account", undefined, {
+    Authorization: `Bearer ${token}`,
+  });
+  assert.equal(deleted.status, 200);
+  assert.equal((deleted.body.data as { deleted: boolean }).deleted, true);
+
+  const stored = await prisma.user.findUnique({ where: { id: userId } });
+  assert.ok(stored?.deletedAt);
+  assert.equal(stored.email, null);
+  assert.equal(stored.name, null);
+  assert.equal(stored.phone.startsWith("d"), true);
+  assert.equal(stored.passwordHash, null);
+
+  const meAfter = await request("/api/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(meAfter.status, 401);
+
+  const samePhone = await json("POST", "/api/auth/register", {
+    name: "Day14 Reborn",
+    email: `d14.reborn.${stamp}@example.com`,
+    phone,
+    password: "password123",
+  });
+  assert.equal(samePhone.status, 201);
+
+  await prisma.user.delete({ where: { id: userId } });
+
+  const adminEmail = `d14.deleteadmin.${stamp}@example.com`;
+  const adminPhone = indianPhone("7", "6");
+  const adminReg = await json("POST", "/api/auth/register", {
+    name: "Day14 Delete Admin",
+    email: adminEmail,
+    phone: adminPhone,
+    password: "password123",
+  });
+  assert.equal(adminReg.status, 201);
+  await prisma.user.update({ where: { email: adminEmail }, data: { role: "ADMIN" } });
+  const adminLogin = await json("POST", "/api/auth/login", {
+    identifier: adminEmail,
+    password: "password123",
+  });
+  assert.equal(adminLogin.status, 200);
+  const adminDenied = await json("DELETE", "/api/auth/account", undefined, {
+    Authorization: `Bearer ${(adminLogin.body.data as AuthData).accessToken}`,
+  });
+  assert.equal(adminDenied.status, 403);
 });
 
 test("CUSTOMER is forbidden from admin catalog writes while ADMIN is allowed", async () => {

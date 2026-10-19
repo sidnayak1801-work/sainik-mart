@@ -20,6 +20,16 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const adminLoginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(255)
+    .transform((value) => value.toLowerCase()),
+  password: z.string().min(8).max(128),
+});
+
 export const sendOtpSchema = z.object({
   phoneNumber: z.string().trim().min(1),
 });
@@ -35,6 +45,7 @@ export const verifyWidgetSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type VerifyWidgetInput = z.infer<typeof verifyWidgetSchema>;

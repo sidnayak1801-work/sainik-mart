@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eas-cli": "^16.28.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -45,7 +46,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas-build-pre-install": "node ./scripts/eas-google-services.js",
+    "eas:preview": "eas-cli build --platform android --profile preview",
+    "eas:production": "eas-cli build --platform android --profile production"
   },
   "private": true
 }

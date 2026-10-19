@@ -44,18 +44,12 @@ const mockBackend = () => {
       const url = String(input);
       const method = (init?.method ?? "GET").toUpperCase();
 
-      if (url.includes("/api/auth/login") && method === "POST") {
-        const body = JSON.parse(String(init?.body ?? "{}")) as { identifier?: string; password?: string };
-        if (body.identifier === adminUser.email && body.password === "password123") {
+      if (url.includes("/api/auth/admin/login") && method === "POST") {
+        const body = JSON.parse(String(init?.body ?? "{}")) as { email?: string; password?: string };
+        if (body.email === adminUser.email && body.password === "password123") {
           return jsonResponse(200, {
             success: true,
             data: { user: adminUser, accessToken: ADMIN_TOKEN },
-          });
-        }
-        if (body.identifier === customerUser.email && body.password === "password123") {
-          return jsonResponse(200, {
-            success: true,
-            data: { user: customerUser, accessToken: CUSTOMER_TOKEN },
           });
         }
         return jsonResponse(401, { success: false, message: "Invalid credentials" });
@@ -161,7 +155,7 @@ describe("admin dashboard shell", () => {
     await user.type(screen.getByLabelText("Email"), customerUser.email);
     await user.type(screen.getByLabelText("Password"), "password123");
     await user.click(screen.getByRole("button", { name: "Login" }));
-    expect(await screen.findByRole("heading", { name: "Access Denied" })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password.");
     expect(screen.queryByRole("heading", { name: "Welcome to Sainik Mart Admin" })).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Admin" })).not.toBeInTheDocument();
   });

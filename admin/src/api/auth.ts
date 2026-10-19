@@ -4,11 +4,14 @@ import { api, ApiError } from "./client";
 
 export const login = async (body: LoginRequest): Promise<AuthPayload> => {
   try {
-    const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/login", body);
+    const response = await api.post<ApiSuccess<AuthPayload>>("/api/auth/admin/login", body);
     return response.data;
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       throw new ApiError("Invalid email or password.", 401, error.data);
+    }
+    if (error instanceof ApiError && error.status === 429) {
+      throw new ApiError("Too many login attempts. Please wait and try again.", 429, error.data);
     }
     throw error;
   }

@@ -1,0 +1,25 @@
+# Same as .gitignore except google-services.json is uploaded to EAS for FCM.
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env
+.env*.local
+GoogleService-Info.plist
+*.tsbuildinfo
+/ios
+/android

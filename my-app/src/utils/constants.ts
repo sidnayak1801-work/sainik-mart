@@ -52,5 +52,7 @@ export const APP_NAME = "Sainik Mart";
 export const APP_TAGLINE = "Har zaroorat, ek jagah";
 export const SUPPORT_EMAIL = "hello@sainikmart.in";
 export const SUPPORT_PHONE = "+911800000000";
+export const PRIVACY_URL = "https://api.sainikmartapp.in/api/privacy";
+export const ACCOUNT_DELETION_URL = "https://api.sainikmartapp.in/api/account-deletion";
 export const IOS_STORE_URL = "";
 export const ANDROID_STORE_URL = "";

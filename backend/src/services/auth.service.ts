@@ -230,8 +230,8 @@ export const verifyWidget = async (accessToken: string) => {
 };
 
 const authenticateVerifiedCustomer = async (phoneNumber: string) => {
-  const existing = await prisma.user.findUnique({
-    where: { phone: phoneNumber },
+  const existing = await prisma.user.findFirst({
+    where: { phone: phoneNumber, deletedAt: null },
     select: userSelect,
   });
 
@@ -278,7 +278,26 @@ const authenticateVerifiedCustomer = async (phoneNumber: string) => {
 export const login = async (identifier: string, password: string) => {
   const user = await findUserByIdentifier(identifier);
 
-  if (!user?.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+  if (!user?.passwordHash || user.deletedAt || !(await verifyPassword(password, user.passwordHash))) {
+    throw new AppError("Invalid credentials", 401);
+  }
+
+  const { passwordHash: _passwordHash, ...publicUser } = user;
+  return toAuthResult({
+    ...publicUser,
+    isVerified: publicUser.isVerified,
+  });
+};
+
+export const loginAdmin = async (email: string, password: string) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (
+    !user?.passwordHash ||
+    user.deletedAt ||
+    user.role !== "ADMIN" ||
+    !(await verifyPassword(password, user.passwordHash))
+  ) {
     throw new AppError("Invalid credentials", 401);
   }
 
@@ -290,8 +309,8 @@ export const login = async (identifier: string, password: string) => {
 };
 
 export const getMe = async (userId: string): Promise<PublicUser> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
     select: userSelect,
   });
 
@@ -300,4 +319,51 @@ export const getMe = async (userId: string): Promise<PublicUser> => {
   }
 
   return user;
+};
+
+export const deleteAccount = async (userId: string): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, phone: true, role: true, deletedAt: true },
+  });
+
+  if (!user || user.deletedAt) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (user.role === "ADMIN") {
+    throw new AppError("Forbidden", 403);
+  }
+
+  const tombstonePhone = `d${user.id.replace(/-/g, "").slice(0, 19)}`;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.deviceToken.deleteMany({ where: { userId } });
+    await tx.cart.deleteMany({ where: { userId } });
+    await tx.authOtp.deleteMany({ where: { identifier: user.phone } });
+    await tx.address.deleteMany({
+      where: { userId, orders: { none: {} } },
+    });
+    await tx.address.updateMany({
+      where: { userId },
+      data: {
+        addressLine: "Deleted",
+        city: "Deleted",
+        pincode: "000000",
+        latitude: null,
+        longitude: null,
+      },
+    });
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        name: null,
+        email: null,
+        phone: tombstonePhone,
+        passwordHash: null,
+        isVerified: false,
+        deletedAt: new Date(),
+      },
+    });
+  });
 };

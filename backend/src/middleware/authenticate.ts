@@ -27,10 +27,10 @@ export const loadAuthenticatedUser = async (req: Request): Promise<void> => {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, deletedAt: true },
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw new AppError("Invalid or expired token", 401);
   }
 

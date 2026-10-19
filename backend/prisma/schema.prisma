@@ -40,9 +40,10 @@ model User {
   phone        String   @unique @db.VarChar(20)
   passwordHash String?  @map("password_hash") @db.VarChar(255)
   role         Role     @default(CUSTOMER)
-  isVerified   Boolean  @default(false) @map("is_verified")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isVerified   Boolean   @default(false) @map("is_verified")
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   cart         Cart?
   addresses    Address[]

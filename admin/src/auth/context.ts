@@ -8,7 +8,7 @@ export type AuthContextValue = {
   isAuthenticated: boolean;
   isAdmin: boolean;
   sessionError: string | null;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   retrySession: () => Promise<void>;
 };

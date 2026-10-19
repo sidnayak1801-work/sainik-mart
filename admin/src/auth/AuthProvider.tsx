@@ -59,9 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     void restoreSession();
   }, [restoreSession]);
 
-  const login = useCallback(async (identifier: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     setSessionError(null);
-    const result = await loginRequest({ identifier, password });
+    const result = await loginRequest({ email, password });
     setToken(result.accessToken);
     try {
       const currentUser = await getMe();

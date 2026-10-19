@@ -8,6 +8,7 @@ import authRouter from "./auth.routes";
 import cartRouter from "./cart.routes";
 import categoryRouter from "./category.routes";
 import healthRouter from "./health.routes";
+import legalRouter from "./legal.routes";
 import notificationRouter from "./notification.routes";
 import orderRouter from "./order.routes";
 import paymentRouter from "./payment.routes";
@@ -17,6 +18,8 @@ const apiRouter = Router();
 
 apiRouter.use("/health", healthRouter);
 apiRouter.use("/api/health", apiHealthRouter);
+apiRouter.use(legalRouter);
+apiRouter.use("/api", legalRouter);
 apiRouter.use("/api/auth", authRouter);
 apiRouter.use("/api/categories", categoryRouter);
 apiRouter.use("/api/products", productRouter);
