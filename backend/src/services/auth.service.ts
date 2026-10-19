@@ -92,12 +92,38 @@ export const normalizeLoginIdentifier = (raw: string): { email?: string; phone?:
   }
 };
 
+const credentialsSelect = {
+  ...userSelect,
+  passwordHash: true,
+  deletedAt: true,
+} as const;
+
+const toPublicUser = (user: {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string;
+  role: PublicUser["role"];
+  isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): PublicUser => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone,
+  role: user.role,
+  isVerified: user.isVerified,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
 const findUserByIdentifier = async (identifier: string) => {
   const where = normalizeLoginIdentifier(identifier);
   if (where.email) {
-    return prisma.user.findUnique({ where: { email: where.email } });
+    return prisma.user.findUnique({ where: { email: where.email }, select: credentialsSelect });
   }
-  return prisma.user.findUnique({ where: { phone: where.phone! } });
+  return prisma.user.findUnique({ where: { phone: where.phone! }, select: credentialsSelect });
 };
 
 const issueOtp = async (rawPhone: string) => {
@@ -282,15 +308,14 @@ export const login = async (identifier: string, password: string) => {
     throw new AppError("Invalid credentials", 401);
   }
 
-  const { passwordHash: _passwordHash, ...publicUser } = user;
-  return toAuthResult({
-    ...publicUser,
-    isVerified: publicUser.isVerified,
-  });
+  return toAuthResult(toPublicUser(user));
 };
 
 export const loginAdmin = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: credentialsSelect,
+  });
 
   if (
     !user?.passwordHash ||
@@ -301,11 +326,7 @@ export const loginAdmin = async (email: string, password: string) => {
     throw new AppError("Invalid credentials", 401);
   }
 
-  const { passwordHash: _passwordHash, ...publicUser } = user;
-  return toAuthResult({
-    ...publicUser,
-    isVerified: publicUser.isVerified,
-  });
+  return toAuthResult(toPublicUser(user));
 };
 
 export const getMe = async (userId: string): Promise<PublicUser> => {
