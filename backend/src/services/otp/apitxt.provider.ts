@@ -31,22 +31,26 @@ export class ApitxtOtpProvider implements OtpProvider {
 
     const channel = this.deps.channel ?? env.APITXT_CHANNEL;
     const templateId = this.deps.templateId ?? env.APITXT_TEMPLATE_ID;
-    const query = new URLSearchParams({
+    const body = new URLSearchParams({
       authkey: authKey,
       mobile: toMsg91Mobile(params.phoneNumber),
       otp: params.otp,
       channel,
     });
     if (templateId) {
-      query.set("template_id", templateId);
+      body.set("template_id", templateId);
     }
 
     const fetchFn = this.deps.fetchFn ?? fetch;
     let response: Response;
     try {
-      response = await fetchFn(`${APITXT_OTP_URL}?${query.toString()}`, {
+      response = await fetchFn(APITXT_OTP_URL, {
         method: "POST",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
       });
     } catch (error) {
       logger.error(`APITxT request failed for ${maskPhone(params.phoneNumber)}`, error);

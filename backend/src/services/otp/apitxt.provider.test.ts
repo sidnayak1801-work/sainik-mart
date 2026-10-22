@@ -29,13 +29,17 @@ const assertLogsHideSecrets = (): void => {
   assert.equal(joined.includes(TEST_KEY), false);
 };
 
-test("APITxT sendOtp posts sendOTP with mocked fetch on success", async () => {
+test("APITxT sendOtp posts sendOTP form body with mocked fetch on success", async () => {
   startLogCapture();
-  const urls: string[] = [];
+  const calls: { url: string; contentType: string; body: string }[] = [];
   const provider = new ApitxtOtpProvider({
     apiKey: TEST_KEY,
-    fetchFn: async (input) => {
-      urls.push(String(input));
+    fetchFn: async (input, init) => {
+      calls.push({
+        url: String(input),
+        contentType: String(new Headers(init?.headers).get("Content-Type") ?? ""),
+        body: String(init?.body ?? ""),
+      });
       return new Response(JSON.stringify({ status: "success", message: "OTP sent successfully" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -45,13 +49,14 @@ test("APITxT sendOtp posts sendOTP with mocked fetch on success", async () => {
 
   await provider.sendOtp({ phoneNumber: TEST_PHONE, otp: TEST_OTP });
 
-  assert.equal(urls.length, 1);
-  const url = new URL(urls[0]);
-  assert.equal(url.origin + url.pathname, "https://apitxt.com/api/sendOTP");
-  assert.equal(url.searchParams.get("authkey"), TEST_KEY);
-  assert.equal(url.searchParams.get("mobile"), "919876543210");
-  assert.equal(url.searchParams.get("otp"), TEST_OTP);
-  assert.equal(url.searchParams.get("channel"), "sms");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://apitxt.com/api/sendOTP");
+  assert.match(calls[0].contentType, /application\/x-www-form-urlencoded/);
+  const form = new URLSearchParams(calls[0].body);
+  assert.equal(form.get("authkey"), TEST_KEY);
+  assert.equal(form.get("mobile"), "919876543210");
+  assert.equal(form.get("otp"), TEST_OTP);
+  assert.equal(form.get("channel"), "sms");
   assertLogsHideSecrets();
 });
 
