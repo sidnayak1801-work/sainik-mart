@@ -18,7 +18,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "admin:provision": "tsx src/scripts/provisionAdmin.ts",
-    "test": "tsx --test --test-concurrency=1 src/catalog.test.ts src/auth.test.ts src/cart.test.ts src/address.test.ts src/order.test.ts src/adminAuth.test.ts src/adminOrder.test.ts src/upload.test.ts src/notification.test.ts"
+    "test": "tsx --test --test-concurrency=1 src/catalog.test.ts src/auth.test.ts src/cart.test.ts src/address.test.ts src/order.test.ts src/adminAuth.test.ts src/adminOrder.test.ts src/upload.test.ts src/notification.test.ts src/config/otpProviderEnv.test.ts src/services/otp/otp.factory.test.ts src/services/otp/apitxt.provider.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

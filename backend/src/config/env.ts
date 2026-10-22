@@ -3,6 +3,8 @@ import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
 
+import { applyOtpProviderRules, otpProviderNameSchema } from "./otpProviderEnv";
+
 const envPath = path.resolve(process.cwd(), ".env");
 loadEnv({ path: envPath });
 
@@ -22,7 +24,7 @@ const envSchema = z
     FIREBASE_PROJECT_ID: z.string().min(1).optional(),
     FIREBASE_CLIENT_EMAIL: z.string().min(1).optional(),
     FIREBASE_PRIVATE_KEY: z.string().min(1).optional(),
-    OTP_PROVIDER: z.enum(["msg91", "mock"]).default("mock"),
+    OTP_PROVIDER: otpProviderNameSchema.default("mock"),
     OTP_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
     OTP_EXPIRY_MINUTES: z.coerce.number().int().positive().default(5),
     OTP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(30),
@@ -32,23 +34,11 @@ const envSchema = z
     MSG91_AUTH_KEY: z.string().min(1).optional(),
     MSG91_TEMPLATE_ID: z.string().min(1).optional(),
     MSG91_SENDER_ID: z.string().min(1).optional(),
+    APITXT_API_KEY: z.string().min(1).optional(),
+    APITXT_CHANNEL: z.enum(["sms", "whatsapp", "voice"]).default("sms"),
+    APITXT_TEMPLATE_ID: z.string().min(1).optional(),
   })
-  .superRefine((data, ctx) => {
-    if (data.NODE_ENV === "production" && data.OTP_PROVIDER === "mock") {
-      ctx.addIssue({
-        code: "custom",
-        path: ["OTP_PROVIDER"],
-        message: "mock OTP provider is not allowed in production",
-      });
-    }
-    if (data.OTP_PROVIDER === "msg91" && !data.MSG91_AUTH_KEY) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["MSG91_AUTH_KEY"],
-        message: "MSG91_AUTH_KEY is required when OTP_PROVIDER=msg91",
-      });
-    }
-  });
+  .superRefine(applyOtpProviderRules);
 
 const parsed = envSchema.safeParse({
   ...process.env,
@@ -68,6 +58,9 @@ const parsed = envSchema.safeParse({
   MSG91_AUTH_KEY: process.env.MSG91_AUTH_KEY || undefined,
   MSG91_TEMPLATE_ID: process.env.MSG91_TEMPLATE_ID || undefined,
   MSG91_SENDER_ID: process.env.MSG91_SENDER_ID || undefined,
+  APITXT_API_KEY: process.env.APITXT_API_KEY || undefined,
+  APITXT_CHANNEL: process.env.APITXT_CHANNEL || undefined,
+  APITXT_TEMPLATE_ID: process.env.APITXT_TEMPLATE_ID || undefined,
 });
 
 if (!parsed.success) {

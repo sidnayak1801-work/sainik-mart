@@ -5,7 +5,8 @@ import type { Server } from "node:http";
 
 import { createApp } from "./app";
 import { resetLoginIpLimit } from "./middleware/loginIpLimit";
-import { failNextMockOtpSend, getLastMockOtp, resetMockOtps } from "./services/otp";
+import { failNextMockOtpSend, getLastMockOtp, resetMockOtps, setOtpProviderForTests } from "./services/otp";
+import { MockOtpProvider } from "./services/otp/mock.provider";
 import { setMsg91WidgetVerifierForTests } from "./services/otp/msg91.widget";
 import { AppError } from "./utils/AppError";
 import { generateOtp, hashOtp, verifyOtpHash } from "./utils/otp";
@@ -84,6 +85,7 @@ before(async () => {
   customerEmail = `d14.cust.${stamp}@example.com`;
   customerPhone = `+81${stamp.slice(-10)}`;
   resetMockOtps();
+  setOtpProviderForTests(new MockOtpProvider());
   setMsg91WidgetVerifierForTests(null);
   server = createApp().listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -92,6 +94,7 @@ before(async () => {
 });
 
 after(async () => {
+  setOtpProviderForTests(null);
   setMsg91WidgetVerifierForTests(null);
   if (createdCategoryId) {
     await prisma.category.deleteMany({ where: { id: createdCategoryId } });

@@ -1,6 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { deleteAccount as deleteAccountRequest, getMe, logout as logoutRequest, verifyWidget } from "@/api/auth";
+import {
+  deleteAccount as deleteAccountRequest,
+  getMe,
+  logout as logoutRequest,
+  verifyOtp,
+} from "@/api/auth";
 import { ApiError, setOnUnauthorized } from "@/api/client";
 import { registerPushForUser, subscribePushTokenRefresh, unregisterPushForUser } from "@/notifications/push";
 import { removeSelectedAddressId } from "@/storage/addressStorage";
@@ -8,7 +13,7 @@ import { getToken, removeToken, setToken } from "@/storage/authStorage";
 import type { AuthState, User } from "@/types/auth";
 
 type AuthContextValue = AuthState & {
-  loginWithWidgetToken: (accessToken: string) => Promise<void>;
+  loginWithOtp: (phoneNumber: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 };
@@ -64,8 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => refresh.remove();
   }, [user]);
 
-  const loginWithWidgetToken = useCallback(async (accessToken: string) => {
-    const result = await verifyWidget(accessToken);
+  const loginWithOtp = useCallback(async (phoneNumber: string, otp: string) => {
+    const result = await verifyOtp({ phoneNumber, otp });
     const nextUser = await persistSession(result.user, result.accessToken);
     setUser(nextUser);
   }, []);
@@ -95,11 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: user !== null,
       isLoading,
-      loginWithWidgetToken,
+      loginWithOtp,
       logout,
       deleteAccount,
     }),
-    [user, isLoading, loginWithWidgetToken, logout, deleteAccount],
+    [user, isLoading, loginWithOtp, logout, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
