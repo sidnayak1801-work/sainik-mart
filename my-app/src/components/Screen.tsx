@@ -11,6 +11,7 @@ type ScreenProps = {
   onRefresh?: () => void;
   padded?: boolean;
   footer?: ReactNode;
+  backgroundColor?: string;
 };
 
 export function Screen({
@@ -20,6 +21,7 @@ export function Screen({
   onRefresh,
   padded = true,
   footer,
+  backgroundColor,
 }: ScreenProps) {
   const contentStyle = [styles.content, !padded && styles.contentFlush];
   const content = scroll ? (
@@ -37,7 +39,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.safe, backgroundColor ? { backgroundColor } : null]} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         {content}
         {footer}

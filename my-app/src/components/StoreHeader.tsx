@@ -19,7 +19,21 @@ import type { MainStackParamList } from "@/types/navigation";
 type Navigation = NativeStackNavigationProp<MainStackParamList>;
 type InfoScreenName = "About" | "Terms" | "Privacy" | "Contact";
 
-export function StoreHeader() {
+type StoreHeaderProps = {
+  variant?: "default" | "home";
+};
+
+const HOME_NAVY = "#001f3e";
+const HOME_GRAY_50 = "#e6e9ec";
+const HOME_GRAY_100 = "#ccd2d8";
+const HOME_GRAY_300 = "#66798b";
+const HOME_BLUE = "#0068ff";
+
+export function StoreHeader({ variant = "default" }: StoreHeaderProps) {
+  const isHome = variant === "home";
+  const iconColor = isHome ? HOME_NAVY : theme.colors.text;
+  const searchIconColor = isHome ? HOME_GRAY_300 : theme.colors.textSecondary;
+  const searchPlaceholder = isHome ? "Search atta, milk, vegetables" : "Search";
   const navigation = useNavigation<Navigation>();
   const { user, logout, isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
@@ -65,10 +79,10 @@ export function StoreHeader() {
   const locationLabel = address ? `${address.city} - ${address.pincode}` : "Select location";
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, isHome && styles.wrapHome]}>
       <View style={styles.topRow}>
         <Pressable accessibilityRole="button" accessibilityLabel="Menu" onPress={() => setMenuOpen(true)} hitSlop={8}>
-          <Ionicons name="menu-outline" size={26} color={theme.colors.text} />
+          <Ionicons name="menu-outline" size={26} color={iconColor} />
         </Pressable>
         <BrandLogo size="xs" />
         <Pressable
@@ -84,12 +98,12 @@ export function StoreHeader() {
           style={styles.location}
         >
           <View style={styles.locationTitleRow}>
-            <Text style={styles.locationTitle} numberOfLines={1}>
-              Current Location
+            <Text style={[styles.locationTitle, isHome && styles.locationTitleHome]} numberOfLines={1}>
+              {isHome ? "Deliver to" : "Current Location"}
             </Text>
-            <Ionicons name="chevron-down" size={14} color={theme.colors.text} />
+            <Ionicons name="chevron-down" size={14} color={iconColor} />
           </View>
-          <Text style={styles.locationMeta} numberOfLines={1}>
+          <Text style={[styles.locationMeta, isHome && styles.locationMetaHome]} numberOfLines={1}>
             {locationLabel}
           </Text>
         </Pressable>
@@ -99,19 +113,19 @@ export function StoreHeader() {
           onPress={() => navigation.navigate("MainTabs", { screen: "Profile" })}
           hitSlop={8}
         >
-          <Ionicons name="person-circle-outline" size={28} color={theme.colors.text} />
+          <Ionicons name="person-circle-outline" size={28} color={iconColor} />
         </Pressable>
       </View>
 
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, isHome && styles.searchRowHome]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Search" onPress={onSearch} hitSlop={8}>
-          <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
+          <Ionicons name="search-outline" size={18} color={searchIconColor} />
         </Pressable>
         <TextInput
           value={search}
           onChangeText={setSearch}
-          placeholder="Search"
-          placeholderTextColor={theme.colors.textSecondary}
+          placeholder={searchPlaceholder}
+          placeholderTextColor={isHome ? HOME_GRAY_300 : theme.colors.textSecondary}
           returnKeyType="search"
           onSubmitEditing={onSearch}
           autoCapitalize="none"
@@ -202,6 +216,22 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+  },
+  wrapHome: {
+    backgroundColor: "#ffffff",
+    borderBottomColor: HOME_GRAY_50,
+  },
+  locationTitleHome: {
+    color: HOME_NAVY,
+    fontWeight: "500",
+  },
+  locationMetaHome: {
+    color: HOME_BLUE,
+  },
+  searchRowHome: {
+    backgroundColor: "#ffffff",
+    borderColor: HOME_GRAY_100,
+    borderRadius: 4,
   },
   topRow: {
     flexDirection: "row",

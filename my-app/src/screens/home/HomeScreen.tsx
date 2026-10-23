@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
@@ -15,6 +15,11 @@ import { ProductCard } from "@/components/ProductCard";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreHeader } from "@/components/StoreHeader";
+import { useAuth } from "@/context/AuthContext";
+import { requireAuth } from "@/navigation/authRedirect";
+import { HomePromoCarousel } from "@/screens/home/HomePromoCarousel";
+import { HomeQuickActions } from "@/screens/home/HomeQuickActions";
+import { homeTheme } from "@/screens/home/homeTheme";
 import { theme } from "@/theme";
 import { APP_TAGLINE } from "@/utils/constants";
 import type { Category, Product } from "@/types/models";
@@ -27,7 +32,16 @@ type Props = CompositeScreenProps<
 
 const HOME_CATEGORY_LIMIT = 8;
 
+const isDiscounted = (product: Product): boolean => {
+  return product.discountPrice !== null && product.discountPrice !== undefined;
+};
+
+const isInStock = (product: Product): boolean => {
+  return product.stockQuantity === undefined || product.stockQuantity > 0;
+};
+
 export function HomeScreen({ navigation }: Props) {
+  const { isAuthenticated } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,25 +73,95 @@ export function HomeScreen({ navigation }: Props) {
   };
 
   const visibleCategories = categories.slice(0, HOME_CATEGORY_LIMIT);
+  const offerProduct = useMemo(
+    () => products.find((product) => isDiscounted(product) && isInStock(product)),
+    [products],
+  );
+
+  const openPopular = () => navigation.navigate("ProductList", { title: "Popular" });
+  const openCategories = () => navigation.navigate("Categories");
+  const openOffers = () => {
+    if (offerProduct) {
+      navigation.navigate("ProductDetails", { productId: offerProduct.id });
+      return;
+    }
+    openPopular();
+  };
 
   return (
-    <Screen padded={false} refreshing={refreshing} onRefresh={() => void onRefresh()}>
-      <StoreHeader />
+    <Screen
+      padded={false}
+      refreshing={refreshing}
+      onRefresh={() => void onRefresh()}
+      backgroundColor={homeTheme.colors.canvas}
+    >
+      <StoreHeader variant="home" />
       <View style={styles.body}>
         {loading ? <Loading /> : null}
         {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
 
-        <View style={styles.banner}>
-          <View style={styles.bannerWell}>
-            <Text style={styles.bannerMark}>SM</Text>
+        <HomeQuickActions
+          actions={[
+            { key: "categories", label: "Shop categories", icon: "grid-outline", onPress: openCategories },
+            { key: "popular", label: "Popular", icon: "flame-outline", onPress: openPopular },
+            { key: "offers", label: "Offers", icon: "pricetag-outline", onPress: openOffers },
+            {
+              key: "orders",
+              label: "My orders",
+              icon: "receipt-outline",
+              onPress: () => {
+                if (!requireAuth(navigation, isAuthenticated, "Orders")) return;
+                navigation.navigate("MainTabs", { screen: "Orders" });
+              },
+            },
+          ]}
+        />
+
+        <HomePromoCarousel
+          cards={[
+            {
+              key: "festive",
+              title: "Festive grocery deals",
+              subtitle: "Stock the kitchen for family gatherings.",
+              cta: "Shop now",
+              backgroundColor: homeTheme.colors.red,
+              onPress: openPopular,
+            },
+            {
+              key: "delivery",
+              title: "Free delivery over ₹499",
+              subtitle: "On your next grocery order.",
+              cta: "Browse",
+              backgroundColor: homeTheme.colors.orange,
+              onPress: openCategories,
+            },
+            {
+              key: "veggies",
+              title: "Fresh veggies today",
+              subtitle: "Seasonal produce, packed this morning.",
+              cta: "See veggies",
+              backgroundColor: homeTheme.colors.red600,
+              onPress: openCategories,
+            },
+          ]}
+        />
+
+        <View style={[styles.hero, homeTheme.shadow.sm]}>
+          <View style={styles.heroWell}>
+            <Text style={styles.heroMark}>SM</Text>
           </View>
-          <View style={styles.bannerCopy}>
-            <Text style={styles.bannerEyebrow}>Sainik Mart</Text>
-            <Text style={styles.bannerTitle}>{APP_TAGLINE}</Text>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroEyebrow}>Sainik Mart</Text>
+            <Text style={styles.heroTitle}>{APP_TAGLINE}</Text>
           </View>
         </View>
 
-        <SectionHeader title="Shop by category" onSeeAll={() => navigation.navigate("Categories")} />
+        <SectionHeader
+          title="Shop by category"
+          titleColor={homeTheme.colors.dark}
+          seeAllColor={homeTheme.colors.blue}
+          onSeeAll={openCategories}
+        />
         {!loading && !error && categories.length === 0 ? (
           <EmptyState title="No categories yet" description="Catalog categories will appear here." />
         ) : (
@@ -94,7 +178,12 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-        <SectionHeader title="Popular" onSeeAll={() => navigation.navigate("ProductList", { title: "Popular" })} />
+        <SectionHeader
+          title="Popular"
+          titleColor={homeTheme.colors.dark}
+          seeAllColor={homeTheme.colors.blue}
+          onSeeAll={openPopular}
+        />
         {!loading && !error && products.length === 0 ? (
           <EmptyState title="No products yet" description="Popular items will appear here." />
         ) : (
@@ -119,6 +208,7 @@ const styles = StyleSheet.create({
   body: {
     padding: theme.spacing.md,
     gap: theme.spacing.md,
+    backgroundColor: homeTheme.colors.canvas,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -133,44 +223,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
   },
-  banner: {
+  hero: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.sm,
+    backgroundColor: homeTheme.colors.blue25,
+    borderRadius: homeTheme.radius.sm,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderBottomWidth: 3,
-    borderBottomColor: theme.colors.accent,
+    borderColor: homeTheme.colors.gray50,
     padding: theme.spacing.md,
   },
-  bannerWell: {
+  heroWell: {
     width: 56,
     height: 56,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.primaryRamp[25],
+    borderRadius: homeTheme.radius.sm,
+    backgroundColor: homeTheme.colors.white,
     alignItems: "center",
     justifyContent: "center",
   },
-  bannerMark: {
-    color: theme.colors.primary,
+  heroMark: {
+    color: homeTheme.colors.blue,
     fontSize: theme.typography.h5,
     fontWeight: theme.weight.bold,
   },
-  bannerCopy: {
+  heroCopy: {
     flex: 1,
     gap: 2,
   },
-  bannerEyebrow: {
-    color: theme.colors.textSecondary,
+  heroEyebrow: {
+    color: homeTheme.colors.gray300,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.semibold,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
-  bannerTitle: {
-    color: theme.colors.text,
+  heroTitle: {
+    color: homeTheme.colors.dark,
     fontSize: theme.typography.body,
     fontWeight: theme.weight.semibold,
   },

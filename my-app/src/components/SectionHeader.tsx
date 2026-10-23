@@ -5,15 +5,17 @@ import { theme } from "@/theme";
 type SectionHeaderProps = {
   title: string;
   onSeeAll?: () => void;
+  titleColor?: string;
+  seeAllColor?: string;
 };
 
-export function SectionHeader({ title, onSeeAll }: SectionHeaderProps) {
+export function SectionHeader({ title, onSeeAll, titleColor, seeAllColor }: SectionHeaderProps) {
   return (
     <View style={styles.row}>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, titleColor ? { color: titleColor } : null]}>{title}</Text>
       {onSeeAll ? (
         <Pressable accessibilityRole="button" onPress={onSeeAll} hitSlop={8}>
-          <Text style={styles.seeAll}>See all &gt;</Text>
+          <Text style={[styles.seeAll, seeAllColor ? { color: seeAllColor } : null]}>See all &gt;</Text>
         </Pressable>
       ) : null}
     </View>
