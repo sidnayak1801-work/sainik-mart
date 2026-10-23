@@ -91,10 +91,28 @@ model Category {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  products Product[]
+  products      Product[]
+  subcategories Subcategory[]
 
   @@index([isActive])
   @@map("categories")
+}
+
+model Subcategory {
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  name       String   @db.VarChar(120)
+  imageUrl   String?  @map("image_url") @db.VarChar(2048)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("subcategories")
 }
 
 model Product {

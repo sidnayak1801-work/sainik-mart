@@ -6,6 +6,13 @@ import { prisma } from "../utils/prisma";
 
 const canSeeInactive = (role?: Role): boolean => role === "ADMIN";
 
+const subcategoryInclude = (role?: Role) => ({
+  subcategories: {
+    where: canSeeInactive(role) ? undefined : { isActive: true },
+    orderBy: { name: "asc" as const },
+  },
+});
+
 const duplicateNameError = (error: Prisma.PrismaClientKnownRequestError): AppError => {
   const target = error.meta?.target;
   const field = Array.isArray(target) && typeof target[0] === "string" ? target[0] : "name";
@@ -16,11 +23,15 @@ export const listCategories = async (role?: Role) => {
   return prisma.category.findMany({
     where: canSeeInactive(role) ? undefined : { isActive: true },
     orderBy: { name: "asc" },
+    include: subcategoryInclude(role),
   });
 };
 
 export const getCategoryById = async (id: string, role?: Role) => {
-  const category = await prisma.category.findUnique({ where: { id } });
+  const category = await prisma.category.findUnique({
+    where: { id },
+    include: subcategoryInclude(role),
+  });
 
   if (!category || (!category.isActive && !canSeeInactive(role))) {
     throw new AppError("Category not found", 404);
@@ -37,6 +48,7 @@ export const createCategory = async (input: CreateCategoryInput) => {
         imageUrl: input.imageUrl,
         isActive: input.isActive ?? true,
       },
+      include: subcategoryInclude("ADMIN"),
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -53,6 +65,7 @@ export const updateCategory = async (id: string, input: UpdateCategoryInput) => 
     return await prisma.category.update({
       where: { id },
       data: input,
+      include: subcategoryInclude("ADMIN"),
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -68,5 +81,6 @@ export const deleteCategory = async (id: string) => {
   return prisma.category.update({
     where: { id },
     data: { isActive: false },
+    include: subcategoryInclude("ADMIN"),
   });
 };

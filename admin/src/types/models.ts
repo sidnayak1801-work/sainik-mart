@@ -1,3 +1,13 @@
+export type Subcategory = {
+  id: string;
+  categoryId: string;
+  name: string;
+  imageUrl: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Category = {
   id: string;
   name: string;
@@ -5,6 +15,7 @@ export type Category = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  subcategories?: Subcategory[];
 };
 
 export type Product = {

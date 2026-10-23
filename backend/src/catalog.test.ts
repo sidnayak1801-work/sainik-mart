@@ -89,6 +89,7 @@ before(async () => {
 
 after(async () => {
   await prisma.product.deleteMany({ where: { name: { startsWith: `Day11 ${stamp}` } } });
+  await prisma.subcategory.deleteMany({ where: { name: { startsWith: `Day11 ${stamp}` } } });
   await prisma.category.deleteMany({ where: { name: { startsWith: `Day11 ${stamp}` } } });
   await prisma.user.deleteMany({
     where: { email: { startsWith: "d11.", contains: stamp } },
@@ -137,11 +138,19 @@ test("customer cannot create or update categories", async () => {
 test("admin creates, updates, and deactivates a category", async () => {
   const created = await authJson(adminToken, "POST", "/api/categories", {
     name: `Day11 ${stamp} Dairy`,
+    imageUrl: "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/dairy.jpg",
   });
   assert.equal(created.status, 201);
-  const category = created.body.data as { id: string; name: string };
+  const category = created.body.data as {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    subcategories: unknown[];
+  };
   categoryId = category.id;
   assert.equal(category.name, `Day11 ${stamp} Dairy`);
+  assert.equal(category.imageUrl, "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/dairy.jpg");
+  assert.deepEqual(category.subcategories, []);
 
   const duplicate = await authJson(adminToken, "POST", "/api/categories", {
     name: `Day11 ${stamp} Dairy`,
@@ -155,6 +164,50 @@ test("admin creates, updates, and deactivates a category", async () => {
 
   const byId = await request(`/api/categories/${categoryId}`);
   assert.equal(byId.status, 200);
+});
+
+test("admin creates subcategories and public list hides inactive ones", async () => {
+  const withImage = await authJson(adminToken, "POST", `/api/categories/${categoryId}/subcategories`, {
+    name: `Day11 ${stamp} Milk`,
+    imageUrl: "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/milk.jpg",
+  });
+  assert.equal(withImage.status, 201);
+  const milk = withImage.body.data as { id: string; imageUrl: string | null };
+  assert.equal(milk.imageUrl, "https://res.cloudinary.com/demo/image/upload/v1/sainik-mart/products/milk.jpg");
+
+  const withoutImage = await authJson(adminToken, "POST", `/api/categories/${categoryId}/subcategories`, {
+    name: `Day11 ${stamp} Curd`,
+  });
+  assert.equal(withoutImage.status, 201);
+  const curd = withoutImage.body.data as { id: string; imageUrl: string | null };
+  assert.equal(curd.imageUrl, null);
+
+  const duplicate = await authJson(adminToken, "POST", `/api/categories/${categoryId}/subcategories`, {
+    name: `Day11 ${stamp} Milk`,
+  });
+  assert.equal(duplicate.status, 409);
+
+  const deactivated = await authJson(adminToken, "DELETE", `/api/subcategories/${curd.id}`);
+  assert.equal(deactivated.status, 200);
+
+  const publicList = await request("/api/categories");
+  assert.equal(publicList.status, 200);
+  const rows = publicList.body.data as Array<{ id: string; subcategories: Array<{ name: string; isActive: boolean }> }>;
+  const dairy = rows.find((item) => item.id === categoryId);
+  assert.ok(dairy);
+  assert.equal(dairy.subcategories.some((item) => item.name === `Day11 ${stamp} Milk`), true);
+  assert.equal(dairy.subcategories.some((item) => item.name === `Day11 ${stamp} Curd`), false);
+
+  const adminList = await request("/api/categories", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  const adminRows = adminList.body.data as Array<{
+    id: string;
+    subcategories: Array<{ name: string }>;
+  }>;
+  const adminDairy = adminRows.find((item) => item.id === categoryId);
+  assert.ok(adminDairy);
+  assert.equal(adminDairy.subcategories.some((item) => item.name === `Day11 ${stamp} Curd`), true);
 });
 
 test("invalid and missing category ids", async () => {

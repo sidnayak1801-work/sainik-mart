@@ -13,6 +13,7 @@ import notificationRouter from "./notification.routes";
 import orderRouter from "./order.routes";
 import paymentRouter from "./payment.routes";
 import productRouter from "./product.routes";
+import subcategoryRouter from "./subcategory.routes";
 
 const apiRouter = Router();
 
@@ -22,6 +23,7 @@ apiRouter.use(legalRouter);
 apiRouter.use("/api", legalRouter);
 apiRouter.use("/api/auth", authRouter);
 apiRouter.use("/api/categories", categoryRouter);
+apiRouter.use("/api/subcategories", subcategoryRouter);
 apiRouter.use("/api/products", productRouter);
 apiRouter.use("/api/cart", cartRouter);
 apiRouter.use("/api/addresses", addressRouter);

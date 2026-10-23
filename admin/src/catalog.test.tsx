@@ -35,6 +35,7 @@ const dairy: Category = {
   isActive: true,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
+  subcategories: [],
 };
 
 const milk = (overrides: Partial<Product> = {}): Product => ({
@@ -74,7 +75,7 @@ const mockCatalog = () => {
       }
 
       if (url.pathname === "/api/categories" && method === "POST") {
-        const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string };
+        const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string; imageUrl?: string | null };
         const name = body.name?.trim() ?? "";
         if (!name) return jsonResponse(400, { success: false, message: "Validation failed" });
         if (categories.some((item) => item.name === name)) {
@@ -84,8 +85,30 @@ const mockCatalog = () => {
           ...dairy,
           id: `cat-${categories.length + 1}`,
           name,
+          imageUrl: body.imageUrl ?? null,
+          subcategories: [],
         };
         categories = [...categories, created];
+        return jsonResponse(201, { success: true, data: created });
+      }
+
+      const subcategoryCreate = url.pathname.match(/^\/api\/categories\/([^/]+)\/subcategories$/);
+      if (subcategoryCreate && method === "POST") {
+        const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string; imageUrl?: string | null };
+        const parent = categories.find((item) => item.id === subcategoryCreate[1]);
+        if (!parent) return jsonResponse(404, { success: false, message: "Category not found" });
+        const created = {
+          id: `sub-${Date.now()}`,
+          categoryId: parent.id,
+          name: body.name?.trim() ?? "",
+          imageUrl: body.imageUrl ?? null,
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        };
+        categories = categories.map((item) =>
+          item.id === parent.id ? { ...item, subcategories: [...(item.subcategories ?? []), created] } : item,
+        );
         return jsonResponse(201, { success: true, data: created });
       }
 
@@ -206,10 +229,15 @@ describe("admin catalog management", () => {
 
     await user.click(screen.getByRole("button", { name: "Add Category" }));
     await user.type(screen.getByLabelText("Name"), "Bakery");
+    await user.type(screen.getByLabelText("Category image URL"), "https://example.com/bakery.jpg");
+    await user.type(screen.getByPlaceholderText("e.g. Atta"), "Breads");
     await user.click(screen.getByRole("button", { name: "Create" }));
 
     expect(await screen.findByText("Bakery")).toBeInTheDocument();
     expect(await screen.findByText("Category created.")).toBeInTheDocument();
+    expect(categories.some((item) => item.name === "Bakery" && item.imageUrl === "https://example.com/bakery.jpg")).toBe(
+      true,
+    );
   });
 
   test("duplicate category name shows the API error", async () => {

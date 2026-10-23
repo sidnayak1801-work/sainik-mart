@@ -5,6 +5,8 @@ import { api } from "./client";
 
 export type CategoryInput = {
   name: string;
+  imageUrl?: string | null;
+  isActive?: boolean;
 };
 
 export const listCategories = async (): Promise<Category[]> => {
@@ -17,7 +19,7 @@ export const createCategory = async (input: CategoryInput): Promise<Category> =>
   return response.data;
 };
 
-export const updateCategory = async (id: string, input: { name?: string; isActive?: boolean }): Promise<Category> => {
+export const updateCategory = async (id: string, input: Partial<CategoryInput>): Promise<Category> => {
   const response = await api.patch<ApiSuccess<Category>>(`/api/categories/${id}`, input);
   return response.data;
 };
