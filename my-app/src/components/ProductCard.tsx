@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { theme } from "@/theme";
 import type { Product } from "@/types/models";
 import { cloudinaryImage } from "@/utils/image";
+import { formatPackSize } from "@/utils/packSize";
 
 type ProductCardProps = {
   product: Product;
@@ -16,6 +17,7 @@ const hasDiscount = (product: Product): boolean => {
 };
 
 export function ProductCard({ product, onPress, compact = false }: ProductCardProps) {
+  const packSize = formatPackSize(product.packQuantity, product.packUnit);
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,6 +39,7 @@ export function ProductCard({ product, onPress, compact = false }: ProductCardPr
       <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
         {product.name}
       </Text>
+      {packSize ? <Text style={styles.pack}>{packSize}</Text> : null}
       <View style={styles.prices}>
         {hasDiscount(product) ? (
           <>
@@ -81,6 +84,11 @@ const styles = StyleSheet.create({
   },
   nameCompact: {
     minHeight: 32,
+  },
+  pack: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
+    fontWeight: theme.weight.medium,
   },
   prices: {
     flexDirection: "row",

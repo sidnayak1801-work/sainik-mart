@@ -24,16 +24,21 @@ const toMoney = (value: Prisma.Decimal | null): number | null => {
 
 type ProductWithCategory = Product & {
   category: { id: string; name: string; isActive: boolean };
+  subcategory: { id: string; name: string } | null;
 };
 
 const serializeProduct = (product: ProductWithCategory) => ({
   ...product,
   price: toMoney(product.price) ?? 0,
   discountPrice: toMoney(product.discountPrice),
+  packQuantity: toMoney(product.packQuantity),
   category: {
     id: product.category.id,
     name: product.category.name,
   },
+  subcategory: product.subcategory
+    ? { id: product.subcategory.id, name: product.subcategory.name }
+    : null,
 });
 
 const assertDiscountFitsPrice = (price: number, discountPrice: number | null): void => {
@@ -53,14 +58,32 @@ const requireCategory = async (categoryId: string) => {
   }
 };
 
+const assertSubcategory = async (categoryId: string, subcategoryId: string) => {
+  const subcategory = await prisma.subcategory.findUnique({
+    where: { id: subcategoryId },
+    select: { id: true, categoryId: true },
+  });
+
+  if (!subcategory) {
+    throw new AppError("Subcategory not found", 404);
+  }
+
+  if (subcategory.categoryId !== categoryId) {
+    throw new AppError("Subcategory does not belong to this category", 400);
+  }
+};
+
 const productInclude = {
   category: {
     select: { id: true, name: true, isActive: true },
   },
+  subcategory: {
+    select: { id: true, name: true },
+  },
 } as const;
 
 export const listProducts = async (query: ProductListQuery, role?: Role) => {
-  const { page, limit, search, categoryId, isActive, stockStatus } = query;
+  const { page, limit, search, categoryId, subcategoryId, isActive, stockStatus } = query;
   const admin = canSeeInactive(role);
   const stockFilter = admin ? stockStatusWhere(stockStatus) : undefined;
   const where: Prisma.ProductWhereInput = {
@@ -68,6 +91,7 @@ export const listProducts = async (query: ProductListQuery, role?: Role) => {
     ...(admin && isActive !== undefined ? { isActive } : {}),
     ...(stockFilter !== undefined ? { stockQuantity: stockFilter } : {}),
     ...(categoryId ? { categoryId } : {}),
+    ...(subcategoryId ? { subcategoryId } : {}),
     ...(search
       ? {
           OR: [
@@ -120,6 +144,9 @@ export const getProductById = async (id: string, role?: Role) => {
 
 export const createProduct = async (input: CreateProductInput) => {
   await requireCategory(input.categoryId);
+  if (input.subcategoryId) {
+    await assertSubcategory(input.categoryId, input.subcategoryId);
+  }
 
   const product = await prisma.product.create({
     data: {
@@ -130,6 +157,9 @@ export const createProduct = async (input: CreateProductInput) => {
       imageUrl: input.imageUrl,
       stockQuantity: input.stockQuantity ?? 0,
       categoryId: input.categoryId,
+      subcategoryId: input.subcategoryId ?? null,
+      packQuantity: input.packQuantity ?? null,
+      packUnit: input.packUnit ?? null,
       isActive: input.isActive ?? true,
     },
     include: productInclude,
@@ -148,6 +178,19 @@ export const updateProduct = async (id: string, input: UpdateProductInput) => {
     await requireCategory(input.categoryId);
   }
 
+  const nextCategoryId = input.categoryId ?? existing.categoryId;
+  const categoryChanged = Boolean(input.categoryId && input.categoryId !== existing.categoryId);
+  const nextSubcategoryId =
+    input.subcategoryId !== undefined
+      ? input.subcategoryId
+      : categoryChanged
+        ? null
+        : existing.subcategoryId;
+
+  if (nextSubcategoryId) {
+    await assertSubcategory(nextCategoryId, nextSubcategoryId);
+  }
+
   const nextPrice = input.price ?? Number(existing.price);
   const nextDiscount =
     input.discountPrice !== undefined ? input.discountPrice : toMoney(existing.discountPrice);
@@ -155,7 +198,10 @@ export const updateProduct = async (id: string, input: UpdateProductInput) => {
 
   const product = await prisma.product.update({
     where: { id },
-    data: input,
+    data: {
+      ...input,
+      subcategoryId: nextSubcategoryId,
+    },
     include: productInclude,
   });
 

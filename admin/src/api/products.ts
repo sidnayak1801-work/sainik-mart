@@ -1,5 +1,5 @@
 import type { ApiSuccess } from "@/types/auth";
-import type { Pagination, Product, StockStatus } from "@/types/models";
+import type { PackUnit, Pagination, Product, StockStatus } from "@/types/models";
 
 import { api } from "./client";
 
@@ -8,6 +8,7 @@ export type ProductListQuery = {
   limit?: number;
   search?: string;
   categoryId?: string;
+  subcategoryId?: string;
   isActive?: boolean;
   stockStatus?: StockStatus;
 };
@@ -24,7 +25,10 @@ export type ProductInput = {
   discountPrice?: number;
   imageUrl?: string | null;
   stockQuantity: number;
+  packQuantity?: number | null;
+  packUnit?: PackUnit | null;
   categoryId: string;
+  subcategoryId?: string | null;
   isActive: boolean;
 };
 
@@ -38,6 +42,7 @@ const toQuery = (params: ProductListQuery): string => {
   if (params.limit !== undefined) search.set("limit", String(params.limit));
   if (params.search) search.set("search", params.search);
   if (params.categoryId) search.set("categoryId", params.categoryId);
+  if (params.subcategoryId) search.set("subcategoryId", params.subcategoryId);
   if (params.isActive !== undefined) search.set("isActive", String(params.isActive));
   if (params.stockStatus) search.set("stockStatus", params.stockStatus);
   const qs = search.toString();

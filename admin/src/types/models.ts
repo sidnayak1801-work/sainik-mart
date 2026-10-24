@@ -18,6 +18,8 @@ export type Category = {
   subcategories?: Subcategory[];
 };
 
+export type PackUnit = "ML" | "L" | "G" | "KG" | "PCS" | "PACK" | "DOZEN" | "BUNCH";
+
 export type Product = {
   id: string;
   name: string;
@@ -26,11 +28,18 @@ export type Product = {
   discountPrice: number | null;
   imageUrl: string | null;
   stockQuantity: number;
+  packQuantity: number | null;
+  packUnit: PackUnit | null;
   categoryId: string;
+  subcategoryId: string | null;
   category: {
     id: string;
     name: string;
   };
+  subcategory?: {
+    id: string;
+    name: string;
+  } | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -90,6 +90,21 @@
   resize: vertical;
 }
 
+.quantityRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.quantityRow input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.quantityRow select {
+  flex: 0 0 140px;
+}
+
 .error {
   margin: 0;
   color: var(--color-danger);

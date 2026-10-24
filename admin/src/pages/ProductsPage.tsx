@@ -14,9 +14,38 @@ import catalog from "@/components/ui/catalog.module.css";
 import modal from "@/components/ui/Modal.module.css";
 import { useToast } from "@/components/ui/toast-context";
 import { PRODUCT_PAGE_SIZE } from "@/constants/inventory";
-import type { Category, Pagination as PaginationMeta, Product } from "@/types/models";
+import type { Category, PackUnit, Pagination as PaginationMeta, Product } from "@/types/models";
 import { useDebouncedValue } from "@/utils/debounce";
-import { formatMoney } from "@/utils/format";
+import { formatMoney, formatPackSize } from "@/utils/format";
+
+const PACK_UNIT_GROUPS: { label: string; options: { value: PackUnit; label: string }[] }[] = [
+  {
+    label: "Liquid",
+    options: [
+      { value: "ML", label: "ml" },
+      { value: "L", label: "L" },
+    ],
+  },
+  {
+    label: "Solid",
+    options: [
+      { value: "G", label: "g" },
+      { value: "KG", label: "kg" },
+    ],
+  },
+  {
+    label: "Count",
+    options: [
+      { value: "PCS", label: "pcs" },
+      { value: "PACK", label: "pack" },
+      { value: "DOZEN", label: "dozen" },
+    ],
+  },
+  {
+    label: "Produce",
+    options: [{ value: "BUNCH", label: "bunch" }],
+  },
+];
 
 type StatusFilter = "all" | "true" | "false";
 
@@ -30,7 +59,10 @@ type FormState = {
   price: string;
   discountPrice: string;
   stockQuantity: string;
+  packQuantity: string;
+  packUnit: PackUnit | "";
   categoryId: string;
+  subcategoryId: string;
   isActive: boolean;
 };
 
@@ -41,7 +73,10 @@ const emptyForm = (): FormState => ({
   price: "",
   discountPrice: "",
   stockQuantity: "0",
+  packQuantity: "",
+  packUnit: "",
   categoryId: "",
+  subcategoryId: "",
   isActive: true,
 });
 
@@ -52,7 +87,10 @@ const formFromProduct = (product: Product): FormState => ({
   price: String(product.price),
   discountPrice: product.discountPrice === null ? "" : String(product.discountPrice),
   stockQuantity: String(product.stockQuantity),
+  packQuantity: product.packQuantity === null ? "" : String(product.packQuantity),
+  packUnit: product.packUnit ?? "",
   categoryId: product.categoryId,
+  subcategoryId: product.subcategoryId ?? "",
   isActive: product.isActive,
 });
 
@@ -73,12 +111,21 @@ const parseForm = (form: FormState, mode: "create" | "edit"): { input?: ProductI
   const stockQuantity = Number(form.stockQuantity);
   const discountRaw = form.discountPrice.trim();
   const discountPrice = discountRaw === "" ? undefined : Number(discountRaw);
+  const packRaw = form.packQuantity.trim();
+  const packQuantity = packRaw === "" ? null : Number(packRaw);
+  const packUnit = form.packUnit === "" ? null : form.packUnit;
 
   if (!name) return { error: "Name is required." };
   if (!description) return { error: "Description is required." };
   if (!form.categoryId) return { error: "Category is required." };
   if (!Number.isFinite(price) || price < 0) return { error: "Price must be 0 or greater." };
   if (!Number.isInteger(stockQuantity) || stockQuantity < 0) return { error: "Stock must be a whole number of 0 or greater." };
+  if ((packQuantity === null) !== (packUnit === null)) {
+    return { error: "Quantity and unit are required together." };
+  }
+  if (packQuantity !== null && (!Number.isFinite(packQuantity) || packQuantity <= 0)) {
+    return { error: "Quantity must be greater than 0." };
+  }
   if (discountPrice !== undefined && (!Number.isFinite(discountPrice) || discountPrice < 0)) {
     return { error: "Discount price must be 0 or greater." };
   }
@@ -97,7 +144,10 @@ const parseForm = (form: FormState, mode: "create" | "edit"): { input?: ProductI
       discountPrice,
       imageUrl: imageRaw === "" ? (mode === "edit" ? null : undefined) : imageRaw,
       stockQuantity,
+      packQuantity,
+      packUnit,
       categoryId: form.categoryId,
+      subcategoryId: form.subcategoryId || null,
       isActive: form.isActive,
     },
   };
@@ -123,6 +173,10 @@ export const ProductsPage = () => {
   const [working, setWorking] = useState(false);
   const debouncedSearch = useDebouncedValue(search);
   const requestId = useRef(0);
+  const selectedCategory = categories.find((category) => category.id === form.categoryId);
+  const subcategoryOptions = (selectedCategory?.subcategories ?? []).filter(
+    (sub) => sub.isActive || sub.id === form.subcategoryId,
+  );
 
   const load = useCallback(async () => {
     const id = ++requestId.current;
@@ -239,6 +293,7 @@ export const ProductsPage = () => {
     { header: "Category", render: (row) => row.category.name },
     { header: "Price", render: (row) => formatMoney(row.price) },
     { header: "Discount", render: (row) => (row.discountPrice === null ? "—" : formatMoney(row.discountPrice)) },
+    { header: "Quantity", render: (row) => formatPackSize(row.packQuantity, row.packUnit) || "—" },
     { header: "Stock", render: (row) => row.stockQuantity },
     {
       header: "Status",
@@ -371,6 +426,39 @@ export const ProductsPage = () => {
               />
             </label>
             <label>
+              Quantity
+              <div className={catalog.quantityRow}>
+                <input
+                  type="number"
+                  min={0.001}
+                  step="0.001"
+                  value={form.packQuantity}
+                  onChange={(event) => setForm((current) => ({ ...current, packQuantity: event.target.value }))}
+                  disabled={saving}
+                  aria-label="Pack quantity"
+                />
+                <select
+                  value={form.packUnit}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, packUnit: event.target.value as PackUnit | "" }))
+                  }
+                  disabled={saving}
+                  aria-label="Pack unit"
+                >
+                  <option value="">Unit</option>
+                  {PACK_UNIT_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </label>
+            <label>
               Stock
               <input
                 type="number"
@@ -386,7 +474,13 @@ export const ProductsPage = () => {
               Category
               <select
                 value={form.categoryId}
-                onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    categoryId: event.target.value,
+                    subcategoryId: "",
+                  }))
+                }
                 required
                 disabled={saving}
               >
@@ -399,6 +493,26 @@ export const ProductsPage = () => {
                 ))}
               </select>
             </label>
+            {subcategoryOptions.length > 0 ? (
+              <label>
+                Subcategory
+                <select
+                  value={form.subcategoryId}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, subcategoryId: event.target.value }))
+                  }
+                  disabled={saving}
+                >
+                  <option value="">None</option>
+                  {subcategoryOptions.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                      {sub.isActive ? "" : " (Inactive)"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               <span>
                 <input

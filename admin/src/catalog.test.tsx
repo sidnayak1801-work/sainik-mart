@@ -28,6 +28,16 @@ const jsonResponse = (status: number, body: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
+const milkSub = {
+  id: "sub-1",
+  categoryId: "cat-1",
+  name: "Milk",
+  imageUrl: null,
+  isActive: true,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
 const dairy: Category = {
   id: "cat-1",
   name: "Dairy",
@@ -35,7 +45,7 @@ const dairy: Category = {
   isActive: true,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
-  subcategories: [],
+  subcategories: [milkSub],
 };
 
 const milk = (overrides: Partial<Product> = {}): Product => ({
@@ -46,7 +56,10 @@ const milk = (overrides: Partial<Product> = {}): Product => ({
   discountPrice: 58,
   imageUrl: null,
   stockQuantity: 40,
+  packQuantity: null,
+  packUnit: null,
   categoryId: dairy.id,
+  subcategoryId: null,
   category: { id: dairy.id, name: dairy.name },
   isActive: true,
   createdAt: "2026-01-01T00:00:00.000Z",
@@ -173,7 +186,10 @@ const mockCatalog = () => {
           description: body.description ?? "",
           price: body.price ?? 0,
           stockQuantity: body.stockQuantity ?? 0,
+          packQuantity: body.packQuantity ?? null,
+          packUnit: body.packUnit ?? null,
           categoryId: body.categoryId ?? dairy.id,
+          subcategoryId: body.subcategoryId ?? null,
           imageUrl: body.imageUrl ?? null,
         });
         products = [...products, created];
@@ -283,6 +299,46 @@ describe("admin catalog management", () => {
     expect(products.some((item) => item.name === "Paneer 200g" && item.imageUrl === "https://example.com/paneer.jpg")).toBe(
       true,
     );
+  });
+
+  test("admin can create a product with a subcategory", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/products");
+    expect(await screen.findByText("Toned Milk 1L")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add Product" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Product" });
+    await user.type(within(dialog).getByLabelText("Name"), "Toned Milk 500ml");
+    await user.type(within(dialog).getByLabelText("Description"), "Half litre milk");
+    await user.type(within(dialog).getByLabelText("Price"), "35");
+    await user.selectOptions(within(dialog).getByLabelText("Category"), dairy.id);
+    await user.selectOptions(within(dialog).getByLabelText("Subcategory"), milkSub.id);
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Product created.")).toBeInTheDocument();
+    expect(products.some((item) => item.name === "Toned Milk 500ml" && item.subcategoryId === milkSub.id)).toBe(true);
+  });
+
+  test("admin can create a product with pack quantity and unit", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/products");
+    expect(await screen.findByText("Toned Milk 1L")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add Product" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Product" });
+    await user.type(within(dialog).getByLabelText("Name"), "Mustard Oil");
+    await user.type(within(dialog).getByLabelText("Description"), "Cold pressed oil");
+    await user.type(within(dialog).getByLabelText("Price"), "180");
+    await user.type(within(dialog).getByLabelText("Pack quantity"), "500");
+    await user.selectOptions(within(dialog).getByLabelText("Pack unit"), "ML");
+    await user.selectOptions(within(dialog).getByLabelText("Category"), dairy.id);
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    expect(await screen.findByText("Product created.")).toBeInTheDocument();
+    expect(products.some((item) => item.name === "Mustard Oil" && item.packQuantity === 500 && item.packUnit === "ML")).toBe(
+      true,
+    );
+    expect(await screen.findByText("500 ml")).toBeInTheDocument();
   });
 
   test("oversized category image is rejected before upload", async () => {

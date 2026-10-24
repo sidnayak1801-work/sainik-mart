@@ -8,6 +8,7 @@ export type ProductListQuery = {
   limit?: number;
   search?: string;
   categoryId?: string;
+  subcategoryId?: string;
 };
 
 export type ProductListResult = {
@@ -25,6 +26,7 @@ const toQuery = (params: ProductListQuery): string => {
   if (params.limit !== undefined) search.set("limit", String(params.limit));
   if (params.search) search.set("search", params.search);
   if (params.categoryId) search.set("categoryId", params.categoryId);
+  if (params.subcategoryId) search.set("subcategoryId", params.subcategoryId);
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 };

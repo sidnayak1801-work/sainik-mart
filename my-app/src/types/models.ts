@@ -1,9 +1,20 @@
+export type Subcategory = {
+  id: string;
+  categoryId: string;
+  name: string;
+  imageUrl?: string | null;
+  isActive?: boolean;
+};
+
 export type Category = {
   id: string;
   name: string;
   imageUrl?: string | null;
   isActive?: boolean;
+  subcategories?: Subcategory[];
 };
+
+export type PackUnit = "ML" | "L" | "G" | "KG" | "PCS" | "PACK" | "DOZEN" | "BUNCH";
 
 export type Product = {
   id: string;
@@ -13,11 +24,18 @@ export type Product = {
   discountPrice?: number | null;
   imageUrl?: string | null;
   stockQuantity?: number;
+  packQuantity?: number | null;
+  packUnit?: PackUnit | null;
   categoryId?: string;
+  subcategoryId?: string | null;
   category?: {
     id: string;
     name: string;
   };
+  subcategory?: {
+    id: string;
+    name: string;
+  } | null;
   isActive?: boolean;
 };
 

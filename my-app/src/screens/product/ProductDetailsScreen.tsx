@@ -15,6 +15,7 @@ import { theme } from "@/theme";
 import type { Product } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
 import { cloudinaryImage } from "@/utils/image";
+import { formatPackSize } from "@/utils/packSize";
 
 type Props = NativeStackScreenProps<MainStackParamList, "ProductDetails">;
 
@@ -42,6 +43,7 @@ export function ProductDetailsScreen({ route }: Props) {
   const discounted =
     product?.discountPrice !== null && product?.discountPrice !== undefined ? product.discountPrice : null;
   const outOfStock = product?.stockQuantity !== undefined && product.stockQuantity <= 0;
+  const packSize = formatPackSize(product?.packQuantity, product?.packUnit);
 
   return (
     <Screen
@@ -76,6 +78,7 @@ export function ProductDetailsScreen({ route }: Props) {
             <View style={styles.image} />
           )}
           <Text style={styles.title}>{product.name}</Text>
+          {packSize ? <Text style={styles.meta}>{packSize}</Text> : null}
           {product.category ? <Text style={styles.meta}>{product.category.name}</Text> : null}
           <View style={styles.prices}>
             {discounted !== null ? (

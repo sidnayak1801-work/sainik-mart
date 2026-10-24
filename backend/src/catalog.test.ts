@@ -306,6 +306,43 @@ test("admin creates and updates products", async () => {
   assert.equal((updated.body.data as { imageUrl: string | null }).imageUrl, null);
 });
 
+test("admin sets pack quantity and unit together", async () => {
+  const missingUnit = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Oil`,
+    description: "Mustard oil",
+    price: 180,
+    categoryId,
+    packQuantity: 500,
+  });
+  assert.equal(missingUnit.status, 400);
+
+  const created = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Mustard Oil`,
+    description: "Cold pressed oil",
+    price: 180,
+    categoryId,
+    packQuantity: 500,
+    packUnit: "ML",
+  });
+  assert.equal(created.status, 201);
+  const createdProduct = created.body.data as {
+    id: string;
+    packQuantity: number | null;
+    packUnit: string | null;
+  };
+  assert.equal(createdProduct.packQuantity, 500);
+  assert.equal(createdProduct.packUnit, "ML");
+
+  const updated = await authJson(adminToken, "PATCH", `/api/products/${createdProduct.id}`, {
+    packQuantity: 1,
+    packUnit: "L",
+  });
+  assert.equal(updated.status, 200);
+  const updatedProduct = updated.body.data as { packQuantity: number | null; packUnit: string | null };
+  assert.equal(updatedProduct.packQuantity, 1);
+  assert.equal(updatedProduct.packUnit, "L");
+});
+
 test("search, filter, and pagination", async () => {
   const search = await request(`/api/products?search=milk`);
   assert.equal(search.status, 200);
@@ -333,6 +370,62 @@ test("search, filter, and pagination", async () => {
     `/api/products?search=milk&categoryId=${categoryId}&page=1&limit=10`,
   );
   assert.equal(combined.status, 200);
+});
+
+test("admin assigns subcategory and list filters by it", async () => {
+  const sub = await authJson(adminToken, "POST", `/api/categories/${categoryId}/subcategories`, {
+    name: `Day11 ${stamp} Packaged Milk`,
+  });
+  assert.equal(sub.status, 201);
+  const subcategoryId = (sub.body.data as { id: string }).id;
+
+  const otherCat = await authJson(adminToken, "POST", "/api/categories", {
+    name: `Day11 ${stamp} Bakery`,
+  });
+  assert.equal(otherCat.status, 201);
+  const otherCategoryId = (otherCat.body.data as { id: string }).id;
+  const otherSub = await authJson(adminToken, "POST", `/api/categories/${otherCategoryId}/subcategories`, {
+    name: `Day11 ${stamp} Breads`,
+  });
+  assert.equal(otherSub.status, 201);
+  const otherSubId = (otherSub.body.data as { id: string }).id;
+
+  const mismatch = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Wrong Sub`,
+    description: "Should fail",
+    price: 10,
+    categoryId,
+    subcategoryId: otherSubId,
+  });
+  assert.equal(mismatch.status, 400);
+
+  const assigned = await authJson(adminToken, "POST", "/api/products", {
+    name: `Day11 ${stamp} Packaged Milk SKU`,
+    description: "Assigned to milk subcategory",
+    price: 70,
+    categoryId,
+    subcategoryId,
+  });
+  assert.equal(assigned.status, 201);
+  const assignedProduct = assigned.body.data as {
+    id: string;
+    subcategoryId: string | null;
+    subcategory: { id: string; name: string } | null;
+  };
+  assert.equal(assignedProduct.subcategoryId, subcategoryId);
+  assert.equal(assignedProduct.subcategory?.id, subcategoryId);
+
+  const filtered = await request(`/api/products?categoryId=${categoryId}&subcategoryId=${subcategoryId}`);
+  assert.equal(filtered.status, 200);
+  const filteredData = filtered.body.data as Array<{ subcategoryId: string | null }>;
+  assert.ok(filteredData.length >= 1);
+  assert.ok(filteredData.every((item) => item.subcategoryId === subcategoryId));
+
+  const moved = await authJson(adminToken, "PATCH", `/api/products/${assignedProduct.id}`, {
+    categoryId: otherCategoryId,
+  });
+  assert.equal(moved.status, 200);
+  assert.equal((moved.body.data as { subcategoryId: string | null }).subcategoryId, null);
 });
 
 test("invalid bearer on public catalog is treated as anonymous", async () => {
