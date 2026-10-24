@@ -12,14 +12,23 @@ type OrderCardProps = {
 
 export function OrderCard({ order, onPress }: OrderCardProps) {
   const cancelled = order.orderStatus === "CANCELLED";
+  const delivered = order.orderStatus === "DELIVERED";
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
       <Card>
         <View style={styles.top}>
           <Text style={styles.id}>Order #{shortOrderId(order.id)}</Text>
-          <View style={[styles.statusPill, cancelled ? styles.cancelledPill : null]}>
-            <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
+          <View
+            style={[
+              styles.statusPill,
+              cancelled ? styles.cancelledPill : null,
+              delivered ? styles.deliveredPill : null,
+            ]}
+          >
+            <Text
+              style={[styles.status, cancelled ? styles.cancelled : null, delivered ? styles.delivered : null]}
+            >
               {formatOrderStatus(order.orderStatus)}
             </Text>
           </View>
@@ -61,6 +70,9 @@ const styles = StyleSheet.create({
   cancelledPill: {
     backgroundColor: theme.colors.dangerRamp[25],
   },
+  deliveredPill: {
+    backgroundColor: theme.colors.successRamp[25],
+  },
   status: {
     color: theme.colors.primary,
     fontSize: theme.typography.caption,
@@ -68,6 +80,9 @@ const styles = StyleSheet.create({
   },
   cancelled: {
     color: theme.colors.danger,
+  },
+  delivered: {
+    color: theme.colors.success,
   },
   date: {
     color: theme.colors.textSecondary,

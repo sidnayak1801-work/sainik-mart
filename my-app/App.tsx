@@ -23,7 +23,7 @@ const navigationTheme = {
     card: theme.colors.surface,
     text: theme.colors.text,
     border: theme.colors.border,
-    notification: theme.colors.accent,
+    notification: theme.colors.danger,
   },
 };
 

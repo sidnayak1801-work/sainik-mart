@@ -42,6 +42,7 @@ const isSafeUserMessage = (message: string): boolean => {
 const userMessageForStatus = (status: number, data: unknown): string => {
   if (status === 401) return "Please sign in again.";
   if (status === 403) return "You do not have access to this action.";
+  if (status === 413) return "Image must be 5 MB or smaller";
   if (status === 429) return "Too many login attempts. Please wait and try again.";
   if (status === 404) return "The requested resource was not found.";
   if (status === 501) {
@@ -138,7 +139,10 @@ const requestForm = async <T>(path: string, body: FormData): Promise<T> => {
       body,
     });
   } catch {
-    throw new ApiError("Unable to reach the API. Start it with npm run api from the repo root, then retry.", 0);
+    throw new ApiError(
+      "The image may be too large (max 5 MB), or the API is unreachable.",
+      0,
+    );
   }
 
   return parseResponse<T>(response, token);
@@ -149,5 +153,5 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
   postForm: <T>(path: string, body: FormData) => requestForm<T>(path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
-  delete: <T>(path: string) => request<T>("DELETE", path),
+  delete: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
 };

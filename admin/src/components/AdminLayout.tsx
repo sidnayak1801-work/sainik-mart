@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/context";
+import { disableAdminPush } from "@/firebase/messaging";
 
 import { AdminHeader } from "./AdminHeader";
 import { AdminSidebar } from "./AdminSidebar";
@@ -29,8 +30,10 @@ export const AdminLayout = () => {
   if (!user) return null;
 
   const handleLogout = () => {
-    logout();
-    navigate("/admin/login", { replace: true });
+    void disableAdminPush().finally(() => {
+      logout();
+      navigate("/admin/login", { replace: true });
+    });
   };
 
   return (

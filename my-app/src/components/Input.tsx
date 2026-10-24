@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.inputBorder,
     borderWidth: 1,
     borderRadius: theme.radius.xs,
     minHeight: 48,

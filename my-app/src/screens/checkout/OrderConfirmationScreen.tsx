@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   eyebrow: {
-    color: theme.colors.gold,
+    color: theme.colors.success,
     fontSize: theme.typography.caption,
     fontWeight: "700",
     letterSpacing: 1.2,
@@ -76,13 +76,13 @@ const styles = StyleSheet.create({
   status: {
     fontSize: theme.typography.subheading,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.success,
     textAlign: "center",
   },
   total: {
     fontSize: theme.typography.heading,
     fontWeight: theme.weight.bold,
-    color: theme.colors.primary,
+    color: theme.colors.text,
     textAlign: "center",
     marginTop: theme.spacing.sm,
   },

@@ -213,5 +213,6 @@ describe("admin dashboard shell", () => {
     await waitForSession();
     expect(screen.getByRole("heading", { name: "Welcome to Sainik Mart Admin" })).toBeInTheDocument();
     expect(screen.getByText(adminUser.email)).toBeInTheDocument();
+    expect(screen.getByText("Push setup needed")).toBeInTheDocument();
   });
 });

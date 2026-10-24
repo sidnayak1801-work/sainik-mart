@@ -246,7 +246,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
       <Screen
         footer={
           canReview && selectedAddress ? (
-            <FooterBar>
+            <FooterBar safeBottom>
               <View>
                 <Text style={styles.barLabel}>Total</Text>
                 <Text style={styles.barValue}>₹{cart?.subtotal ?? 0}</Text>

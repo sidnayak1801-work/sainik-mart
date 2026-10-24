@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   price: {
-    color: theme.colors.accent,
+    color: theme.colors.primary,
     fontSize: theme.typography.heading,
     fontWeight: theme.weight.bold,
   },

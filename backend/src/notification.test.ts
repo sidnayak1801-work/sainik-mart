@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { after, before, test } from "node:test";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 import { createApp } from "./app";
+import { env } from "./config/env";
 import {
   sendToUser,
   setNotificationSender,
@@ -160,9 +162,23 @@ test("device token APIs require auth and reject invalid payloads", async () => {
 
   const badPlatform = await authJson(customerAToken, "POST", "/api/notifications/device-token", {
     token: "token-a",
-    platform: "WEB",
+    platform: "DESKTOP",
   });
   assert.equal(badPlatform.status, 400);
+});
+
+test("admin can register a WEB token and duplicates upsert", async () => {
+  const first = await authJson(adminToken, "POST", "/api/notifications/device-token", {
+    token: `d32-admin-web-${stamp}`,
+    platform: "WEB",
+  });
+  assert.equal(first.status, 200);
+  const again = await authJson(adminToken, "POST", "/api/notifications/device-token", {
+    token: `d32-admin-web-${stamp}`,
+    platform: "WEB",
+  });
+  assert.equal(again.status, 200);
+  assert.equal(await prisma.deviceToken.count({ where: { token: `d32-admin-web-${stamp}` } }), 1);
 });
 
 test("registers, upserts, supports multiple devices, and enforces token ownership", async () => {
@@ -300,4 +316,88 @@ test("admin status update notifies the customer and invalid transitions do not",
   assert.equal(notificationCalls[0]?.payload.data.orderId, orderId);
   assert.equal(notificationCalls[0]?.payload.data.status, "CONFIRMED");
   assert.equal(notificationCalls[0]?.payload.body, "Your order has been confirmed.");
+});
+
+const signPayment = (razorpayOrderId: string, razorpayPaymentId: string): string => {
+  assert.ok(env.RAZORPAY_KEY_SECRET);
+  return createHmac("sha256", env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+};
+
+test("first paid order notifies admin tokens only and sender failure does not fail verify", async () => {
+  const adminPush = `d32-admin-paid-${stamp}`;
+  const customerPush = `d32-cust-paid-${stamp}`;
+  assert.equal(
+    (await authJson(adminToken, "POST", "/api/notifications/device-token", {
+      token: adminPush,
+      platform: "WEB",
+    })).status,
+    200,
+  );
+  assert.equal(
+    (await authJson(customerAToken, "POST", "/api/notifications/device-token", {
+      token: customerPush,
+      platform: "ANDROID",
+    })).status,
+    200,
+  );
+
+  notificationCalls.length = 0;
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await authJson(customerAToken, "POST", "/api/cart/items", { productId, quantity: 1 })).status, 201);
+  const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
+  assert.equal(created.status, 201);
+  const order = created.body.data as { id: string; razorpay?: { orderId: string } };
+  assert.ok(order.razorpay?.orderId);
+  assert.equal(
+    notificationCalls.some((call) => call.payload.data.type === "ADMIN_ORDER_PAID"),
+    false,
+  );
+
+  const paymentId = `pay_admin_${stamp}`;
+  const verified = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: order.razorpay.orderId,
+    razorpayPaymentId: paymentId,
+    razorpaySignature: signPayment(order.razorpay.orderId, paymentId),
+  });
+  assert.equal(verified.status, 200);
+  const adminCall = notificationCalls.find((call) => call.payload.data.type === "ADMIN_ORDER_PAID");
+  assert.ok(adminCall);
+  assert.equal(adminCall.payload.data.orderId, order.id);
+  assert.ok(adminCall.tokens.includes(adminPush));
+  assert.equal(adminCall.tokens.includes(customerPush), false);
+
+  notificationCalls.length = 0;
+  const replay = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: order.razorpay.orderId,
+    razorpayPaymentId: paymentId,
+    razorpaySignature: signPayment(order.razorpay.orderId, paymentId),
+  });
+  assert.equal(replay.status, 200);
+  assert.equal(
+    notificationCalls.some((call) => call.payload.data.type === "ADMIN_ORDER_PAID"),
+    false,
+  );
+
+  setNotificationSender(async () => {
+    throw new Error("FCM down");
+  });
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await authJson(customerAToken, "POST", "/api/cart/items", { productId, quantity: 1 })).status, 201);
+  const created2 = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
+  assert.equal(created2.status, 201);
+  const order2 = created2.body.data as { id: string; razorpay?: { orderId: string } };
+  assert.ok(order2.razorpay?.orderId);
+  const pay2 = `pay_admin_fail_${stamp}`;
+  const verified2 = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order2.id,
+    razorpayOrderId: order2.razorpay.orderId,
+    razorpayPaymentId: pay2,
+    razorpaySignature: signPayment(order2.razorpay.orderId, pay2),
+  });
+  assert.equal(verified2.status, 200);
+  setNotificationSender(recordSender);
 });

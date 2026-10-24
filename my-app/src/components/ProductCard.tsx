@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   price: {
-    color: theme.colors.accent,
+    color: theme.colors.primary,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.bold,
   },

@@ -285,6 +285,23 @@ describe("admin catalog management", () => {
     );
   });
 
+  test("oversized category image is rejected before upload", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/categories");
+    await screen.findByText("Dairy");
+
+    await user.click(screen.getByRole("button", { name: "Add Category" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Category" });
+    const oversized = new File(["x"], "huge.jpg", { type: "image/jpeg" });
+    Object.defineProperty(oversized, "size", { value: 5 * 1024 * 1024 + 1 });
+
+    await user.upload(within(dialog).getByLabelText("Category picture"), oversized);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Image must be 5 MB or smaller");
+    const uploadCalls = vi.mocked(fetch).mock.calls.filter((call) => String(call[0]).includes("/api/admin/uploads"));
+    expect(uploadCalls).toHaveLength(0);
+  });
+
   test("admin can upload a product image and save the Cloudinary URL", async () => {
     const user = userEvent.setup();
     renderApp("/admin/products");

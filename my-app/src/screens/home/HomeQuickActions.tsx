@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { homeTheme } from "@/screens/home/homeTheme";
 import { theme } from "@/theme";
 
 type QuickAction = {
@@ -27,7 +26,7 @@ export function HomeQuickActions({ actions }: HomeQuickActionsProps) {
           style={styles.item}
         >
           <View style={styles.well}>
-            <Ionicons name={action.icon} size={22} color={homeTheme.colors.blue} />
+            <Ionicons name={action.icon} size={22} color={theme.colors.primary} />
           </View>
           <Text style={styles.label} numberOfLines={2}>
             {action.label}
@@ -48,17 +47,18 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     gap: theme.spacing.xs,
+    minHeight: 48,
   },
   well: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: homeTheme.colors.blue25,
+    backgroundColor: theme.colors.primaryRamp[25],
     alignItems: "center",
     justifyContent: "center",
   },
   label: {
-    color: homeTheme.colors.dark,
+    color: theme.colors.text,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.medium,
     textAlign: "center",

@@ -46,6 +46,7 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
         },
         tabBarLabelStyle: {
           fontSize: theme.typography.caption,
@@ -70,7 +71,7 @@ function MainTabs() {
           tabBarIcon: tabIcon("cart-outline", "cart"),
           tabBarBadge: itemCount > 0 ? itemCount : undefined,
           tabBarBadgeStyle: {
-            backgroundColor: theme.colors.accent,
+            backgroundColor: theme.colors.danger,
             color: theme.colors.primaryText,
           },
         }}
@@ -95,7 +96,8 @@ export function MainNavigator() {
       screenOptions={{
         headerTintColor: theme.colors.primary,
         headerStyle: { backgroundColor: theme.colors.surface },
-        headerTitleStyle: { color: theme.colors.text, fontWeight: "700" },
+        headerTitleStyle: { color: theme.colors.text, fontWeight: "600" },
+        headerShadowVisible: false,
         contentStyle: { backgroundColor: theme.colors.background },
       }}
     >

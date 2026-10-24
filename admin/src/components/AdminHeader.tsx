@@ -2,6 +2,7 @@ import { Menu, X } from "lucide-react";
 
 import type { User } from "@/types/auth";
 
+import { AdminPushControl } from "./AdminPushControl";
 import styles from "./AdminLayout.module.css";
 
 type Props = {
@@ -29,6 +30,7 @@ export const AdminHeader = ({ user, menuOpen, onToggleMenu, onLogout }: Props) =
         <h1>Sainik Mart Admin</h1>
       </div>
       <div className={styles.userBlock}>
+        <AdminPushControl />
         <div className={styles.userMeta}>
           <strong>{user.name || "Admin"}</strong>
           <span>{user.email}</span>

@@ -87,8 +87,8 @@ export function ProductListScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: theme.typography.title,
-    fontWeight: "700",
+    fontSize: theme.typography.heading,
+    fontWeight: theme.weight.semibold,
     color: theme.colors.text,
   },
   subtitle: {
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   gridItem: {
-    width: "25%",
+    width: "50%",
     paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
   },

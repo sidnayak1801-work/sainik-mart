@@ -1,14 +1,21 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { theme } from "@/theme";
 
 type FooterBarProps = {
   children: ReactNode;
+  safeBottom?: boolean;
 };
 
-export function FooterBar({ children }: FooterBarProps) {
-  return <View style={styles.bar}>{children}</View>;
+export function FooterBar({ children, safeBottom = false }: FooterBarProps) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.bar, safeBottom ? { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) } : null]}>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

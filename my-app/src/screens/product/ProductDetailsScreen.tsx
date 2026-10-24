@@ -47,7 +47,7 @@ export function ProductDetailsScreen({ route }: Props) {
     <Screen
       footer={
         product ? (
-          <FooterBar>
+          <FooterBar safeBottom>
             <View>
               <Text style={styles.footerLabel}>{outOfStock ? "Out of stock" : "Total"}</Text>
               <Text style={styles.footerPrice}>₹{discounted ?? product.price}</Text>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   price: {
-    color: theme.colors.accent,
+    color: theme.colors.primary,
     fontSize: theme.typography.heading,
     fontWeight: theme.weight.bold,
   },

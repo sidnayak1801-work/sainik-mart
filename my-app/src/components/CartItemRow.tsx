@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.weight.semibold,
   },
   price: {
-    color: theme.colors.accent,
+    color: theme.colors.primary,
     fontSize: theme.typography.body,
     fontWeight: theme.weight.bold,
   },

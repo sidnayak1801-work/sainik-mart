@@ -32,9 +32,11 @@ export const OrdersPage = () => {
   const debouncedSearch = useDebouncedValue(search);
   const requestId = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     const id = ++requestId.current;
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const result = await listOrders({
@@ -56,6 +58,20 @@ export const OrdersPage = () => {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void load({ silent: true });
+      }
+    };
+    const interval = window.setInterval(refreshIfVisible, 30_000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
   }, [load]);
 
   useEffect(() => {

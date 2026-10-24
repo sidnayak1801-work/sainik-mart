@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   hyphen: {
     fontSize: theme.typography.heading,
     fontWeight: theme.weight.medium,
-    color: theme.colors.gold,
+    color: theme.colors.textSecondary,
     paddingHorizontal: theme.spacing.xs,
   },
 });

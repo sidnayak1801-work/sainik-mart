@@ -6,7 +6,11 @@ import { AppError } from "../utils/AppError";
 import { logger } from "../utils/logger";
 import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
-import { sendOrderCreatedNotification, sendOrderStatusNotification } from "./notification.service";
+import {
+  sendAdminNewOrderNotification,
+  sendOrderCreatedNotification,
+  sendOrderStatusNotification,
+} from "./notification.service";
 import { createRazorpayOrder, getRazorpayKeyId, verifyPaymentSignature } from "./razorpay.service";
 
 const cartInclude = {
@@ -334,6 +338,12 @@ export const verifyPayment = async (userId: string, input: VerifyPaymentInput) =
       },
     }),
   ]);
+
+  try {
+    await sendAdminNewOrderNotification(order.id, toMoney(order.totalAmount));
+  } catch (error) {
+    logger.error("Admin new-order notification failed", error);
+  }
 
   return serializeOrder(
     await prisma.order.findUniqueOrThrow({

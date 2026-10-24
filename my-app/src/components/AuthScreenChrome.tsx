@@ -80,6 +80,9 @@ export function AuthScreenChrome({
 const styles = StyleSheet.create({
   back: {
     alignSelf: "flex-start",
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: "center",
     marginLeft: -theme.spacing.xs,
     marginBottom: theme.spacing.sm,
   },

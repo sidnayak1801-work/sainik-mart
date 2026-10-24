@@ -64,6 +64,7 @@ export function OrderDetailsScreen({ route }: Props) {
   );
 
   const cancelled = order?.orderStatus === "CANCELLED";
+  const delivered = order?.orderStatus === "DELIVERED";
 
   return (
     <Screen>
@@ -73,8 +74,16 @@ export function OrderDetailsScreen({ route }: Props) {
         <>
           <Text style={styles.title}>Order #{shortOrderId(order.id)}</Text>
           <Text style={styles.date}>{order.createdAt ? formatDateTime(order.createdAt) : ""}</Text>
-          <View style={[styles.statusPill, cancelled ? styles.cancelledPill : null]}>
-            <Text style={[styles.status, cancelled ? styles.cancelled : null]}>
+          <View
+            style={[
+              styles.statusPill,
+              cancelled ? styles.cancelledPill : null,
+              delivered ? styles.deliveredPill : null,
+            ]}
+          >
+            <Text
+              style={[styles.status, cancelled ? styles.cancelled : null, delivered ? styles.delivered : null]}
+            >
               {formatOrderStatus(order.orderStatus)}
             </Text>
           </View>
@@ -127,6 +136,9 @@ const styles = StyleSheet.create({
   cancelledPill: {
     backgroundColor: theme.colors.dangerRamp[25],
   },
+  deliveredPill: {
+    backgroundColor: theme.colors.successRamp[25],
+  },
   status: {
     color: theme.colors.primary,
     fontSize: theme.typography.subheading,
@@ -134,6 +146,9 @@ const styles = StyleSheet.create({
   },
   cancelled: {
     color: theme.colors.danger,
+  },
+  delivered: {
+    color: theme.colors.success,
   },
   section: {
     gap: theme.spacing.sm,

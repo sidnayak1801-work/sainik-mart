@@ -19,7 +19,6 @@ import { useAuth } from "@/context/AuthContext";
 import { requireAuth } from "@/navigation/authRedirect";
 import { HomePromoCarousel } from "@/screens/home/HomePromoCarousel";
 import { HomeQuickActions } from "@/screens/home/HomeQuickActions";
-import { homeTheme } from "@/screens/home/homeTheme";
 import { theme } from "@/theme";
 import { APP_TAGLINE } from "@/utils/constants";
 import type { Category, Product } from "@/types/models";
@@ -93,9 +92,8 @@ export function HomeScreen({ navigation }: Props) {
       padded={false}
       refreshing={refreshing}
       onRefresh={() => void onRefresh()}
-      backgroundColor={homeTheme.colors.canvas}
     >
-      <StoreHeader variant="home" />
+      <StoreHeader />
       <View style={styles.body}>
         {loading ? <Loading /> : null}
         {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
@@ -124,7 +122,7 @@ export function HomeScreen({ navigation }: Props) {
               title: "Festive grocery deals",
               subtitle: "Stock the kitchen for family gatherings.",
               cta: "Shop now",
-              backgroundColor: homeTheme.colors.red,
+              backgroundColor: theme.colors.danger,
               onPress: openPopular,
             },
             {
@@ -132,7 +130,7 @@ export function HomeScreen({ navigation }: Props) {
               title: "Free delivery over ₹499",
               subtitle: "On your next grocery order.",
               cta: "Browse",
-              backgroundColor: homeTheme.colors.orange,
+              backgroundColor: theme.colors.accent,
               onPress: openCategories,
             },
             {
@@ -140,13 +138,13 @@ export function HomeScreen({ navigation }: Props) {
               title: "Fresh veggies today",
               subtitle: "Seasonal produce, packed this morning.",
               cta: "See veggies",
-              backgroundColor: homeTheme.colors.red600,
+              backgroundColor: theme.colors.dangerRamp[600],
               onPress: openCategories,
             },
           ]}
         />
 
-        <View style={[styles.hero, homeTheme.shadow.sm]}>
+        <View style={[styles.hero, theme.shadow.sm]}>
           <View style={styles.heroWell}>
             <Text style={styles.heroMark}>SM</Text>
           </View>
@@ -158,8 +156,6 @@ export function HomeScreen({ navigation }: Props) {
 
         <SectionHeader
           title="Shop by category"
-          titleColor={homeTheme.colors.dark}
-          seeAllColor={homeTheme.colors.blue}
           onSeeAll={openCategories}
         />
         {!loading && !error && categories.length === 0 ? (
@@ -180,8 +176,6 @@ export function HomeScreen({ navigation }: Props) {
 
         <SectionHeader
           title="Popular"
-          titleColor={homeTheme.colors.dark}
-          seeAllColor={homeTheme.colors.blue}
           onSeeAll={openPopular}
         />
         {!loading && !error && products.length === 0 ? (
@@ -208,7 +202,7 @@ const styles = StyleSheet.create({
   body: {
     padding: theme.spacing.md,
     gap: theme.spacing.md,
-    backgroundColor: homeTheme.colors.canvas,
+    backgroundColor: theme.colors.background,
   },
   categoryGrid: {
     flexDirection: "row",
@@ -219,7 +213,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   productItem: {
-    width: "25%",
+    width: "50%",
     paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
   },
@@ -227,22 +221,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.md,
-    backgroundColor: homeTheme.colors.blue25,
-    borderRadius: homeTheme.radius.sm,
+    backgroundColor: theme.colors.primaryRamp[25],
+    borderRadius: theme.radius.sm,
     borderWidth: 1,
-    borderColor: homeTheme.colors.gray50,
+    borderColor: theme.colors.border,
     padding: theme.spacing.md,
   },
   heroWell: {
     width: 56,
     height: 56,
-    borderRadius: homeTheme.radius.sm,
-    backgroundColor: homeTheme.colors.white,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   heroMark: {
-    color: homeTheme.colors.blue,
+    color: theme.colors.primary,
     fontSize: theme.typography.h5,
     fontWeight: theme.weight.bold,
   },
@@ -251,14 +245,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   heroEyebrow: {
-    color: homeTheme.colors.gray300,
+    color: theme.colors.textSecondary,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.semibold,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   heroTitle: {
-    color: homeTheme.colors.dark,
+    color: theme.colors.text,
     fontSize: theme.typography.body,
     fontWeight: theme.weight.semibold,
   },

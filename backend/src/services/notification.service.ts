@@ -113,6 +113,26 @@ export const sendToUser = async (userId: string, payload: NotificationPayload): 
   );
 };
 
+export const sendAdminNewOrderNotification = async (orderId: string, totalAmount: number): Promise<void> => {
+  const rows = await prisma.deviceToken.findMany({
+    where: { user: { role: "ADMIN" } },
+    select: { token: true },
+  });
+  const shortId = orderId.replace(/-/g, "").slice(0, 8);
+  const amount = Number.isInteger(totalAmount) ? String(totalAmount) : totalAmount.toFixed(2);
+  await sendToTokens(
+    rows.map((row) => row.token),
+    {
+      title: "New paid order",
+      body: `Order ${shortId} — ₹${amount}`,
+      data: {
+        type: "ADMIN_ORDER_PAID",
+        orderId,
+      },
+    },
+  );
+};
+
 export const sendOrderCreatedNotification = async (userId: string, orderId: string): Promise<void> => {
   await sendToUser(userId, {
     title: "Order Placed",
@@ -148,7 +168,7 @@ export const sendOrderStatusNotification = async (
 export const registerDeviceToken = async (
   userId: string,
   token: string,
-  platform: "ANDROID" | "IOS",
+  platform: "ANDROID" | "IOS" | "WEB",
 ): Promise<{ registered: true }> => {
   await prisma.deviceToken.upsert({
     where: { token },

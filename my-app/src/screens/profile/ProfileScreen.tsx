@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   tagline: {
-    color: theme.colors.gold,
+    color: theme.colors.primary,
     fontSize: theme.typography.caption,
     fontWeight: "700",
     letterSpacing: 1.2,

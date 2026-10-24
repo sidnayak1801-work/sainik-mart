@@ -369,6 +369,10 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
       (payload) => payload.data.type === "ORDER_CREATED" && payload.data.orderId === order.id,
     ),
   );
+  assert.equal(
+    orderNotificationCalls.some((payload) => payload.data.type === "ADMIN_ORDER_PAID"),
+    false,
+  );
   const payment = await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } });
   assert.equal(payment.razorpayOrderId, razorpay.orderId);
   assert.equal(payment.paymentStatus, "PENDING");
@@ -686,6 +690,10 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
     (await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } })).paymentStatus,
     "FAILED",
   );
+  assert.equal(
+    orderNotificationCalls.some((payload) => payload.data.type === "ADMIN_ORDER_PAID"),
+    false,
+  );
 
   const paymentId = "pay_test_ok";
   const verified = await authJson(customerAToken, "POST", "/api/payments/verify", {
@@ -698,6 +706,11 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
   const paid = orderOf(verified);
   assert.equal(paid.paymentStatus, "PAID");
   assert.equal(paid.orderStatus, "CONFIRMED");
+  const adminPaidCalls = orderNotificationCalls.filter(
+    (payload) => payload.data.type === "ADMIN_ORDER_PAID" && payload.data.orderId === order.id,
+  );
+  assert.equal(adminPaidCalls.length, 1);
+  assert.equal(adminPaidCalls[0]?.title, "New paid order");
 
   const stored = await prisma.order.findUniqueOrThrow({
     where: { id: order.id },
@@ -715,6 +728,12 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
   });
   assert.equal(replay.status, 200);
   assert.equal(orderOf(replay).paymentStatus, "PAID");
+  assert.equal(
+    orderNotificationCalls.filter(
+      (payload) => payload.data.type === "ADMIN_ORDER_PAID" && payload.data.orderId === order.id,
+    ).length,
+    1,
+  );
 
   await prisma.cartItem.deleteMany({ where: { cart: { userId: customerBId } } });
   assert.equal((await addToCart(customerBToken, productBId, 1)).status, 201);

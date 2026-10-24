@@ -13,7 +13,7 @@ export function AppNavigator() {
     return (
       <View style={styles.splash}>
         <BrandLogo size="lg" />
-        <ActivityIndicator color={theme.colors.gold} />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: theme.colors.primaryDark,
+    backgroundColor: theme.colors.background,
     gap: theme.spacing.lg,
   },
 });

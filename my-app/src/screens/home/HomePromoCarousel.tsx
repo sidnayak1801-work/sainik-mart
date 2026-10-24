@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 
-import { homeTheme } from "@/screens/home/homeTheme";
 import { theme } from "@/theme";
 
 type PromoCard = {
@@ -42,9 +41,13 @@ export function HomePromoCarousel({ cards }: HomePromoCarouselProps) {
         contentContainerStyle={styles.track}
       >
         {cards.map((card) => (
-          <View key={card.key} style={[styles.card, { backgroundColor: card.backgroundColor }, homeTheme.shadow.lift]}>
-            <Text style={styles.title}>{card.title}</Text>
-            <Text style={styles.subtitle}>{card.subtitle}</Text>
+          <View key={card.key} style={[styles.card, { backgroundColor: card.backgroundColor }, theme.shadow.lift]}>
+            <Text style={styles.title} numberOfLines={2}>
+              {card.title}
+            </Text>
+            <Text style={styles.subtitle} numberOfLines={2}>
+              {card.subtitle}
+            </Text>
             <Pressable accessibilityRole="button" onPress={card.onPress} style={styles.cta}>
               <Text style={styles.ctaLabel}>{card.cta}</Text>
             </Pressable>
@@ -53,10 +56,7 @@ export function HomePromoCarousel({ cards }: HomePromoCarouselProps) {
       </ScrollView>
       <View style={styles.dots}>
         {cards.map((card, cardIndex) => (
-          <View
-            key={card.key}
-            style={[styles.dot, cardIndex === index ? styles.dotActive : styles.dotIdle]}
-          />
+          <View key={card.key} style={[styles.dot, cardIndex === index ? styles.dotActive : styles.dotIdle]} />
         ))}
       </View>
     </View>
@@ -73,29 +73,31 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    borderRadius: homeTheme.radius.promo,
+    borderRadius: theme.radius.promo,
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
   },
   title: {
-    color: homeTheme.colors.white,
+    color: theme.colors.primaryText,
     fontSize: theme.typography.h5,
     fontWeight: theme.weight.semibold,
   },
   subtitle: {
-    color: homeTheme.colors.white,
+    color: theme.colors.primaryText,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.regular,
   },
   cta: {
     alignSelf: "flex-start",
-    backgroundColor: homeTheme.colors.white,
-    borderRadius: homeTheme.radius.pill,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.pill,
+    minHeight: 36,
+    justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 20,
   },
   ctaLabel: {
-    color: homeTheme.colors.dark,
+    color: theme.colors.text,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.semibold,
   },
@@ -110,9 +112,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   dotActive: {
-    backgroundColor: homeTheme.colors.blue,
+    backgroundColor: theme.colors.primary,
   },
   dotIdle: {
-    backgroundColor: homeTheme.colors.gray100,
+    backgroundColor: theme.colors.border,
   },
 });

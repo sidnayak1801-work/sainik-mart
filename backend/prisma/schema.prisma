@@ -31,6 +31,7 @@ enum PaymentStatus {
 enum DevicePlatform {
   ANDROID
   IOS
+  WEB
 }
 
 model User {

@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
   body: {
     padding: theme.spacing.md,
     gap: theme.spacing.md,
+    backgroundColor: theme.colors.background,
   },
   grid: {
     flexDirection: "row",
