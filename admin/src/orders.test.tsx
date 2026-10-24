@@ -23,6 +23,7 @@ const TOKEN_KEY = "sainik-mart.admin.accessToken";
 const ADMIN_TOKEN = "admin-token";
 const ORDER_A_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ORDER_B_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const ORDER_C_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const MISSING_ID = "00000000-0000-4000-8000-000000000000";
 
 const jsonResponse = (status: number, body: unknown) =>
@@ -35,6 +36,7 @@ const summary = (overrides: Partial<OrderSummary> = {}): OrderSummary => ({
   id: ORDER_A_ID,
   orderStatus: "PENDING",
   paymentStatus: "PENDING",
+  paymentMethod: "RAZORPAY",
   totalAmount: 160,
   createdAt: "2026-09-20T10:00:00.000Z",
   itemCount: 1,
@@ -47,6 +49,7 @@ const detail = (overrides: Partial<OrderDetail> = {}): OrderDetail => ({
   addressId: "addr-1",
   orderStatus: "PENDING",
   paymentStatus: "PENDING",
+  paymentMethod: "RAZORPAY",
   subtotal: 160,
   deliveryFee: 0,
   discount: 0,
@@ -86,10 +89,12 @@ const mockOrders = () => {
       if (url.pathname === "/api/admin/orders" && method === "GET") {
         const search = url.searchParams.get("search")?.toLowerCase() ?? "";
         const status = url.searchParams.get("status");
+        const paymentMethod = url.searchParams.get("paymentMethod");
         const page = Number(url.searchParams.get("page") ?? "1");
         const limit = Number(url.searchParams.get("limit") ?? "10");
         let items = orders.filter((item) => {
           if (status && item.orderStatus !== status) return false;
+          if (paymentMethod && item.paymentMethod !== paymentMethod) return false;
           if (
             search &&
             !item.id.toLowerCase().includes(search) &&
@@ -107,6 +112,21 @@ const mockOrders = () => {
           data: items,
           pagination: { page, limit, total, totalPages: total === 0 ? 0 : Math.ceil(total / limit) },
         });
+      }
+
+      const paymentMatch = url.pathname.match(/^\/api\/admin\/orders\/([^/]+)\/payment$/);
+      if (paymentMatch && method === "PATCH") {
+        const current = details[paymentMatch[1]];
+        if (!current) return jsonResponse(404, { success: false, message: "Order not found" });
+        if (current.paymentMethod !== "COD" || current.paymentStatus !== "PENDING") {
+          return jsonResponse(400, { success: false, message: "Only COD orders can be collected" });
+        }
+        const updated: OrderDetail = { ...current, paymentStatus: "PAID" };
+        details = { ...details, [current.id]: updated };
+        orders = orders.map((item) =>
+          item.id === current.id ? { ...item, paymentStatus: updated.paymentStatus } : item,
+        );
+        return jsonResponse(200, { success: true, data: updated });
       }
 
       const statusMatch = url.pathname.match(/^\/api\/admin\/orders\/([^/]+)\/status$/);
@@ -163,6 +183,16 @@ describe("admin orders", () => {
         createdAt: "2026-09-19T10:00:00.000Z",
         customer: { name: "Bala Iyer", email: "bala@example.com", phone: "+922222222222" },
       }),
+      summary({
+        id: ORDER_C_ID,
+        orderStatus: "OUT_FOR_DELIVERY",
+        paymentStatus: "PENDING",
+        paymentMethod: "COD",
+        totalAmount: 80,
+        itemCount: 1,
+        createdAt: "2026-09-18T10:00:00.000Z",
+        customer: { name: "Chitra Nair", email: "chitra@example.com", phone: "+933333333333" },
+      }),
     ];
     details = {
       [ORDER_A_ID]: detail(),
@@ -184,6 +214,26 @@ describe("admin orders", () => {
         address: { id: "addr-2", addressLine: "90 Bravo Road", city: "Nagpur", pincode: "440001" },
         customer: { id: "cust-2", name: "Bala Iyer", email: "bala@example.com", phone: "+922222222222" },
       }),
+      [ORDER_C_ID]: detail({
+        id: ORDER_C_ID,
+        orderStatus: "OUT_FOR_DELIVERY",
+        paymentStatus: "PENDING",
+        paymentMethod: "COD",
+        totalAmount: 80,
+        subtotal: 80,
+        items: [
+          {
+            id: "item-3",
+            productId: "prod-3",
+            productName: "Curd 400g",
+            price: 80,
+            quantity: 1,
+            total: 80,
+          },
+        ],
+        address: { id: "addr-3", addressLine: "5 Cash Lane", city: "Pune", pincode: "411001" },
+        customer: { id: "cust-3", name: "Chitra Nair", email: "chitra@example.com", phone: "+933333333333" },
+      }),
     };
     mockOrders();
   });
@@ -203,6 +253,8 @@ describe("admin orders", () => {
     expect(screen.getByText("Bala Iyer")).toBeInTheDocument();
     expect(screen.getByText("₹160.00")).toBeInTheDocument();
     expect(screen.getByText("₹240.00")).toBeInTheDocument();
+    expect(screen.getAllByText("Online · Unpaid").length).toBeGreaterThan(0);
+    expect(screen.getByText("COD · Unpaid")).toBeInTheDocument();
 
     const rows = screen.getAllByRole("row");
     const anitaRow = rows.find((row) => within(row).queryByText("Anita Rao"));
@@ -255,6 +307,38 @@ describe("admin orders", () => {
     expect(await screen.findByText("The requested resource was not found.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     expect(screen.queryByText("Customer")).not.toBeInTheDocument();
+  });
+
+  test("payment method filter uses the backend query", async () => {
+    const user = userEvent.setup();
+    renderApp("/admin/orders");
+    expect(await screen.findByText("Chitra Nair")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Payment method"), "COD");
+    await waitFor(() => {
+      const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+      expect(urls.some((url) => url.includes("paymentMethod=COD"))).toBe(true);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Anita Rao")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Chitra Nair")).toBeInTheDocument();
+  });
+
+  test("admin can mark a dispatched COD order as collected", async () => {
+    const user = userEvent.setup();
+    renderApp(`/admin/orders/${ORDER_C_ID}`);
+    expect(await screen.findByText("chitra@example.com")).toBeInTheDocument();
+    expect(screen.getByText("COD")).toBeInTheDocument();
+    expect(screen.getByText("Unpaid")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mark cash collected" }));
+    const dialog = screen.getByRole("dialog", { name: "Collect COD payment" });
+    await user.click(within(dialog).getByRole("button", { name: "Mark collected" }));
+
+    expect(await screen.findByText("COD payment marked as collected.")).toBeInTheDocument();
+    expect(details[ORDER_C_ID]?.paymentStatus).toBe("PAID");
+    expect(await screen.findByText("Paid")).toBeInTheDocument();
   });
 
   test("empty list shows a friendly message", async () => {

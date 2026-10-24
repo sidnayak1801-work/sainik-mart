@@ -67,17 +67,21 @@ export type RazorpayCheckoutPayload = {
   name: string;
 };
 
+export type PaymentMethod = "RAZORPAY" | "COD";
+
 export type CreatedOrder = {
   id: string;
   addressId: string;
   orderStatus: string;
   paymentStatus: string;
+  paymentMethod?: PaymentMethod;
   subtotal: number;
   deliveryFee: number;
   discount: number;
   totalAmount: number;
   createdAt?: string;
   items: OrderLine[];
+  address?: OrderAddress;
   razorpay?: RazorpayCheckoutPayload;
 };
 
@@ -92,6 +96,7 @@ export type OrderSummary = {
   id: string;
   orderStatus: string;
   paymentStatus: string;
+  paymentMethod?: PaymentMethod;
   totalAmount: number;
   createdAt: string;
   itemCount: number;

@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentStatus, Prisma, type OrderItem } from "@prisma/client";
+import { OrderStatus, PaymentMethod, PaymentStatus, Prisma, type OrderItem } from "@prisma/client";
 
 import type { AdminOrderListQuery, CreateOrderInput, OrderListQuery } from "../validators/order.validators";
 import type { VerifyPaymentInput } from "../validators/payment.validators";
@@ -96,6 +96,7 @@ const serializeOrder = (order: OrderWithItems) => ({
   addressId: order.addressId,
   orderStatus: order.orderStatus,
   paymentStatus: order.paymentStatus,
+  paymentMethod: order.paymentMethod,
   subtotal: toMoney(order.subtotal),
   deliveryFee: toMoney(order.deliveryFee),
   discount: toMoney(order.discount),
@@ -115,6 +116,7 @@ const serializeOrderSummary = (order: OrderListRow) => ({
   id: order.id,
   orderStatus: order.orderStatus,
   paymentStatus: order.paymentStatus,
+  paymentMethod: order.paymentMethod,
   totalAmount: toMoney(order.totalAmount),
   createdAt: order.createdAt,
   itemCount: order._count.items,
@@ -158,6 +160,7 @@ const assertPurchasable = (product: { isActive: boolean; category: { isActive: b
 };
 
 export const createOrder = async (userId: string, input: CreateOrderInput) => {
+  const paymentMethod = input.paymentMethod ?? PaymentMethod.RAZORPAY;
   const address = await prisma.address.findFirst({
     where: { id: input.addressId, userId },
     select: { id: true },
@@ -214,6 +217,7 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
         deliveryFee,
         discount,
         totalAmount,
+        paymentMethod,
       },
     });
 
@@ -248,9 +252,19 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
 
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
+    if (paymentMethod === PaymentMethod.COD) {
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          paymentStatus: PaymentStatus.PENDING,
+          paymentMethod: PaymentMethod.COD,
+        },
+      });
+    }
+
     return tx.order.findUniqueOrThrow({
       where: { id: order.id },
-      include: orderInclude,
+      include: orderDetailInclude,
     });
   });
 
@@ -258,6 +272,15 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     await sendOrderCreatedNotification(userId, created.id);
   } catch (error) {
     logger.error("Order-created notification failed", error);
+  }
+
+  if (paymentMethod === PaymentMethod.COD) {
+    try {
+      await sendAdminNewOrderNotification(created.id, toMoney(created.totalAmount), PaymentMethod.COD);
+    } catch (error) {
+      logger.error("Admin new-order notification failed", error);
+    }
+    return serializeOrderDetail(created);
   }
 
   const amountPaise = Math.round(toMoney(created.totalAmount) * 100);
@@ -271,11 +294,12 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
       orderId: created.id,
       razorpayOrderId: razorpayOrder.id,
       paymentStatus: PaymentStatus.PENDING,
+      paymentMethod: PaymentMethod.RAZORPAY,
     },
   });
 
   return {
-    ...serializeOrder(created),
+    ...serializeOrderDetail(created),
     razorpay: {
       keyId: getRazorpayKeyId(),
       orderId: razorpayOrder.id,
@@ -297,6 +321,10 @@ export const verifyPayment = async (userId: string, input: VerifyPaymentInput) =
 
   if (!order) {
     throw new AppError("Order not found", 404);
+  }
+
+  if (order.paymentMethod === PaymentMethod.COD) {
+    throw new AppError("Payment verification is not available for COD orders", 400);
   }
 
   if (order.paymentStatus === PaymentStatus.PAID) {
@@ -340,7 +368,7 @@ export const verifyPayment = async (userId: string, input: VerifyPaymentInput) =
   ]);
 
   try {
-    await sendAdminNewOrderNotification(order.id, toMoney(order.totalAmount));
+    await sendAdminNewOrderNotification(order.id, toMoney(order.totalAmount), PaymentMethod.RAZORPAY);
   } catch (error) {
     logger.error("Admin new-order notification failed", error);
   }
@@ -402,11 +430,15 @@ export const cancelOrder = async (_userId: string, _id: string) => {
 };
 
 export const listAdminOrders = async (query: AdminOrderListQuery) => {
-  const { page, limit, status, search } = query;
+  const { page, limit, status, search, paymentMethod } = query;
   const where: Prisma.OrderWhereInput = {};
 
   if (status) {
     where.orderStatus = status;
+  }
+
+  if (paymentMethod) {
+    where.paymentMethod = paymentMethod;
   }
 
   if (search) {
@@ -491,6 +523,48 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
   } catch (error) {
     logger.error("Order-status notification failed", error);
   }
+
+  return getAdminOrderById(id);
+};
+
+const COD_COLLECT_STATUSES: OrderStatus[] = [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED];
+
+export const collectCodPayment = async (id: string) => {
+  const existing = await prisma.order.findUnique({
+    where: { id },
+    include: { payment: true },
+  });
+
+  if (!existing) {
+    throw new AppError("Order not found", 404);
+  }
+
+  if (existing.paymentMethod !== PaymentMethod.COD) {
+    throw new AppError("Only COD orders can be collected", 400);
+  }
+
+  if (existing.paymentStatus === PaymentStatus.PAID) {
+    throw new AppError("Payment already collected", 400);
+  }
+
+  if (!COD_COLLECT_STATUSES.includes(existing.orderStatus)) {
+    throw new AppError("Collect cash only when the order is out for delivery or delivered", 400);
+  }
+
+  await prisma.$transaction([
+    prisma.order.update({
+      where: { id },
+      data: { paymentStatus: PaymentStatus.PAID },
+    }),
+    ...(existing.payment
+      ? [
+          prisma.payment.update({
+            where: { id: existing.payment.id },
+            data: { paymentStatus: PaymentStatus.PAID },
+          }),
+        ]
+      : []),
+  ]);
 
   return getAdminOrderById(id);
 };

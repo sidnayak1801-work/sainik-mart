@@ -9,8 +9,11 @@ export const ORDER_STATUS_VALUES = [
   "CANCELLED",
 ] as const;
 
+export const PAYMENT_METHOD_VALUES = ["RAZORPAY", "COD"] as const;
+
 export const createOrderSchema = z.object({
   addressId: z.string().uuid(),
+  paymentMethod: z.enum(PAYMENT_METHOD_VALUES).optional(),
 });
 
 export const orderListQuerySchema = z.object({
@@ -30,6 +33,10 @@ export const adminOrderListQuerySchema = z.object({
     .trim()
     .optional()
     .transform((value) => (value === "" ? undefined : value)),
+  paymentMethod: z.preprocess((value) => {
+    if (value === undefined || value === "") return undefined;
+    return value;
+  }, z.enum(PAYMENT_METHOD_VALUES).optional()),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -40,4 +47,9 @@ export const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUS_VALUES),
 });
 
+export const collectCodPaymentSchema = z.object({
+  collected: z.literal(true),
+});
+
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+export type CollectCodPaymentInput = z.infer<typeof collectCodPaymentSchema>;

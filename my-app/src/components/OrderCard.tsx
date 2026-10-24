@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/Card";
 import { theme } from "@/theme";
 import type { OrderSummary } from "@/types/models";
-import { formatDateTime, formatOrderStatus, shortOrderId } from "@/utils/date";
+import { formatDateTime, formatOrderStatus, formatPaymentMethod, formatPaymentStatus, shortOrderId } from "@/utils/date";
 
 type OrderCardProps = {
   order: OrderSummary;
@@ -34,6 +34,9 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
           </View>
         </View>
         <Text style={styles.date}>{formatDateTime(order.createdAt)}</Text>
+        <Text style={styles.pay}>
+          {formatPaymentMethod(order.paymentMethod)} · {formatPaymentStatus(order.paymentStatus)}
+        </Text>
         <View style={styles.bottom}>
           <Text style={styles.meta}>
             {order.itemCount} {order.itemCount === 1 ? "item" : "items"}
@@ -87,6 +90,11 @@ const styles = StyleSheet.create({
   date: {
     color: theme.colors.textSecondary,
     fontSize: theme.typography.body,
+    marginTop: theme.spacing.xs,
+  },
+  pay: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.caption,
     marginTop: theme.spacing.xs,
   },
   bottom: {

@@ -49,6 +49,8 @@ export type OrderStatus = "PENDING" | "CONFIRMED" | "PACKING" | "OUT_FOR_DELIVER
 
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
+export type PaymentMethod = "RAZORPAY" | "COD";
+
 export type OrderCustomer = {
   id?: string;
   name: string;
@@ -76,6 +78,7 @@ export type OrderSummary = {
   id: string;
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
   totalAmount: number;
   createdAt: string;
   itemCount: number;
@@ -87,6 +90,7 @@ export type OrderDetail = {
   addressId: string;
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
   subtotal: number;
   deliveryFee: number;
   discount: number;

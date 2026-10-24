@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "@/api/client";
-import { getOrder, updateOrderStatus } from "@/api/orders";
+import { collectCodPayment, getOrder, updateOrderStatus } from "@/api/orders";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -11,7 +11,7 @@ import catalog from "@/components/ui/catalog.module.css";
 import { useToast } from "@/components/ui/toast-context";
 import { nextOrderStatuses } from "@/constants/orders";
 import type { OrderDetail, OrderItem, OrderStatus } from "@/types/models";
-import { formatDate, formatMoney, formatOrderStatus } from "@/utils/format";
+import { formatDate, formatMoney, formatOrderStatus, formatPaymentMethod, formatPaymentStatus } from "@/utils/format";
 
 import styles from "./OrderDetailPage.module.css";
 
@@ -26,6 +26,7 @@ export const OrderDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState<OrderStatus | "">("");
   const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
+  const [collectOpen, setCollectOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const requestId = useRef(0);
 
@@ -71,6 +72,26 @@ export const OrderDetailPage = () => {
     }
   };
 
+  const canCollectCash =
+    order?.paymentMethod === "COD" &&
+    order.paymentStatus === "PENDING" &&
+    (order.orderStatus === "OUT_FOR_DELIVERY" || order.orderStatus === "DELIVERED");
+
+  const onConfirmCollect = async () => {
+    if (!order) return;
+    setWorking(true);
+    try {
+      const updated = await collectCodPayment(order.id);
+      setOrder(updated);
+      setCollectOpen(false);
+      notify("COD payment marked as collected.");
+    } catch (err) {
+      notify(errorMessage(err), "error");
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const itemColumns: Column<OrderItem>[] = [
     { header: "Item", render: (row) => row.productName },
     { header: "Qty", render: (row) => row.quantity },
@@ -107,9 +128,21 @@ export const OrderDetailPage = () => {
                 <dd>
                   <OrderStatusBadge status={order.orderStatus} />
                 </dd>
+                <dt>Payment method</dt>
+                <dd>{formatPaymentMethod(order.paymentMethod)}</dd>
                 <dt>Payment</dt>
-                <dd>{order.paymentStatus}</dd>
+                <dd>{formatPaymentStatus(order.paymentStatus)}</dd>
               </dl>
+              {canCollectCash ? (
+                <button
+                  type="button"
+                  className={catalog.primary}
+                  disabled={working}
+                  onClick={() => setCollectOpen(true)}
+                >
+                  Mark cash collected
+                </button>
+              ) : null}
               {allowed.length === 0 ? (
                 <p className={styles.terminal}>This order is {formatOrderStatus(order.orderStatus).toLowerCase()}.</p>
               ) : (
@@ -185,6 +218,16 @@ export const OrderDetailPage = () => {
           pending={working}
           onCancel={() => setPendingStatus(null)}
           onConfirm={() => void onConfirmStatus()}
+        />
+      ) : null}
+      {collectOpen ? (
+        <ConfirmDialog
+          title="Collect COD payment"
+          message="Mark this Cash on Delivery payment as collected?"
+          confirmLabel="Mark collected"
+          pending={working}
+          onCancel={() => setCollectOpen(false)}
+          onConfirm={() => void onConfirmCollect()}
         />
       ) : null}
     </div>

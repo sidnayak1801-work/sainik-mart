@@ -401,3 +401,43 @@ test("first paid order notifies admin tokens only and sender failure does not fa
   assert.equal(verified2.status, 200);
   setNotificationSender(recordSender);
 });
+
+test("COD create notifies admins and sender failure does not fail the order", async () => {
+  const adminPush = `d32-admin-cod-${stamp}`;
+  assert.equal(
+    (
+      await authJson(adminToken, "POST", "/api/notifications/device-token", {
+        token: adminPush,
+        platform: "WEB",
+      })
+    ).status,
+    200,
+  );
+
+  notificationCalls.length = 0;
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await authJson(customerAToken, "POST", "/api/cart/items", { productId, quantity: 1 })).status, 201);
+  const created = await authJson(customerAToken, "POST", "/api/orders", {
+    addressId: addressAId,
+    paymentMethod: "COD",
+  });
+  assert.equal(created.status, 201);
+  const orderId = (created.body.data as { id: string }).id;
+  const adminCall = notificationCalls.find((call) => call.payload.data.type === "ADMIN_ORDER_COD");
+  assert.ok(adminCall);
+  assert.equal(adminCall.payload.data.orderId, orderId);
+  assert.ok(adminCall.tokens.includes(adminPush));
+
+  setNotificationSender(async () => {
+    throw new Error("FCM down");
+  });
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await authJson(customerAToken, "POST", "/api/cart/items", { productId, quantity: 1 })).status, 201);
+  const created2 = await authJson(customerAToken, "POST", "/api/orders", {
+    addressId: addressAId,
+    paymentMethod: "COD",
+  });
+  assert.equal(created2.status, 201);
+  assert.ok((created2.body.data as { id?: string }).id);
+  setNotificationSender(recordSender);
+});

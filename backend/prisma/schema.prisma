@@ -28,6 +28,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PaymentMethod {
+  RAZORPAY
+  COD
+}
+
 enum DevicePlatform {
   ANDROID
   IOS
@@ -193,6 +198,7 @@ model Order {
   discount      Decimal       @db.Decimal(10, 2)
   totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
   paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod PaymentMethod @default(RAZORPAY) @map("payment_method")
   orderStatus   OrderStatus   @default(PENDING) @map("order_status")
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -206,6 +212,7 @@ model Order {
   @@index([addressId])
   @@index([orderStatus])
   @@index([paymentStatus])
+  @@index([paymentMethod])
   @@map("orders")
 }
 
@@ -233,11 +240,13 @@ model Payment {
   razorpayOrderId   String?       @unique @map("razorpay_order_id") @db.VarChar(255)
   razorpayPaymentId String?       @unique @map("razorpay_payment_id") @db.VarChar(255)
   paymentStatus     PaymentStatus @default(PENDING) @map("payment_status")
+  paymentMethod     PaymentMethod @default(RAZORPAY) @map("payment_method")
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([paymentStatus])
+  @@index([paymentMethod])
   @@map("payments")
 }

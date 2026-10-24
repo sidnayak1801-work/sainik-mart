@@ -48,6 +48,7 @@ type OrderData = {
   addressId: string;
   orderStatus: string;
   paymentStatus: string;
+  paymentMethod?: string;
   subtotal: number;
   deliveryFee: number;
   discount: number;
@@ -343,6 +344,7 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
   assert.equal(order.addressId, addressAId);
   assert.equal(order.orderStatus, "PENDING");
   assert.equal(order.paymentStatus, "PENDING");
+  assert.equal(order.paymentMethod, "RAZORPAY");
   assert.equal(order.deliveryFee, 0);
   assert.equal(order.discount, 0);
   assert.equal(order.items.length, 2);
@@ -371,6 +373,10 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
   );
   assert.equal(
     orderNotificationCalls.some((payload) => payload.data.type === "ADMIN_ORDER_PAID"),
+    false,
+  );
+  assert.equal(
+    orderNotificationCalls.some((payload) => payload.data.type === "ADMIN_ORDER_COD"),
     false,
   );
   const payment = await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } });
@@ -749,6 +755,54 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
   });
   assert.equal(foreign.status, 404);
   assert.equal((foreign.body as { message?: string }).message, "Order not found");
+});
+
+test("creates a COD order unpaid without Razorpay and rejects verify", async () => {
+  await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
+  assert.equal((await addToCart(customerAToken, productCId, 1)).status, 201);
+  const badMethod = await authJson(customerAToken, "POST", "/api/orders", {
+    addressId: addressAId,
+    paymentMethod: "PAYPAL",
+  });
+  assert.equal(badMethod.status, 400);
+
+  const created = await authJson(customerAToken, "POST", "/api/orders", {
+    addressId: addressAId,
+    paymentMethod: "COD",
+  });
+  assert.equal(created.status, 201);
+  const order = orderOf(created);
+  assert.equal(order.paymentMethod, "COD");
+  assert.equal(order.paymentStatus, "PENDING");
+  assert.equal(order.orderStatus, "PENDING");
+  assert.equal((created.body.data as { razorpay?: unknown }).razorpay, undefined);
+  assert.ok(order.address);
+  assert.equal(order.address?.id, addressAId);
+
+  const cart = await authJson(customerAToken, "GET", "/api/cart");
+  assert.equal(((cart.body.data as { items: unknown[] }).items).length, 0);
+
+  const payment = await prisma.payment.findUniqueOrThrow({ where: { orderId: order.id } });
+  assert.equal(payment.paymentMethod, "COD");
+  assert.equal(payment.paymentStatus, "PENDING");
+  assert.equal(payment.razorpayOrderId, null);
+  assert.equal(payment.razorpayPaymentId, null);
+
+  const verify = await authJson(customerAToken, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: "order_cod",
+    razorpayPaymentId: "pay_cod",
+    razorpaySignature: "nope",
+  });
+  assert.equal(verify.status, 400);
+  assert.equal((verify.body as { message?: string }).message, "Payment verification is not available for COD orders");
+  assert.equal((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).paymentStatus, "PENDING");
+
+  const adminCod = orderNotificationCalls.filter(
+    (payload) => payload.data.type === "ADMIN_ORDER_COD" && payload.data.orderId === order.id,
+  );
+  assert.equal(adminCod.length, 1);
+  assert.equal(adminCod[0]?.title, "New COD Order Received");
 });
 
 test("order creation succeeds when the notification sender throws", async () => {

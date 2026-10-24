@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import {
   cancelOrder,
+  collectCodPayment,
   createOrder,
   getAdminOrderById,
   getOrderById,
@@ -52,5 +53,10 @@ export const getAdminById = async (req: Request, res: Response): Promise<void> =
 
 export const updateStatus = async (req: Request, res: Response): Promise<void> => {
   const data = await updateOrderStatus(paramId(req.params.id), req.body.status);
+  res.status(200).json({ success: true, data });
+};
+
+export const collectPayment = async (req: Request, res: Response): Promise<void> => {
+  const data = await collectCodPayment(paramId(req.params.id));
   res.status(200).json({ success: true, data });
 };

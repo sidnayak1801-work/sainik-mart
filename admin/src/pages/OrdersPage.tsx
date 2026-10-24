@@ -9,9 +9,9 @@ import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { Pagination } from "@/components/ui/Pagination";
 import catalog from "@/components/ui/catalog.module.css";
 import { ORDER_PAGE_SIZE, ORDER_STATUSES } from "@/constants/orders";
-import type { OrderStatus, OrderSummary, Pagination as PaginationMeta } from "@/types/models";
+import type { OrderStatus, OrderSummary, Pagination as PaginationMeta, PaymentMethod } from "@/types/models";
 import { useDebouncedValue } from "@/utils/debounce";
-import { formatDate, formatMoney, formatOrderStatus, shortId } from "@/utils/format";
+import { formatDate, formatMoney, formatOrderStatus, formatPaymentMethod, formatPaymentStatus, shortId } from "@/utils/format";
 
 const errorMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : "Unable to complete the request. Please try again.";
@@ -27,6 +27,7 @@ export const OrdersPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "all">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debouncedSearch = useDebouncedValue(search);
@@ -44,6 +45,7 @@ export const OrdersPage = () => {
         limit: ORDER_PAGE_SIZE,
         search: debouncedSearch || undefined,
         status: status === "all" ? undefined : status,
+        paymentMethod: paymentMethod === "all" ? undefined : paymentMethod,
       });
       if (id !== requestId.current) return;
       setItems(result.items);
@@ -54,7 +56,7 @@ export const OrdersPage = () => {
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, [page, debouncedSearch, status]);
+  }, [page, debouncedSearch, status, paymentMethod]);
 
   useEffect(() => {
     void load();
@@ -76,7 +78,7 @@ export const OrdersPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, status]);
+  }, [debouncedSearch, status, paymentMethod]);
 
   const columns: Column<OrderSummary>[] = [
     { header: "Order", render: (row) => shortId(row.id) },
@@ -84,6 +86,7 @@ export const OrdersPage = () => {
     { header: "Date", render: (row) => formatDate(row.createdAt) },
     { header: "Items", render: (row) => row.itemCount },
     { header: "Total", render: (row) => formatMoney(row.totalAmount) },
+    { header: "Payment", render: (row) => `${formatPaymentMethod(row.paymentMethod)} · ${formatPaymentStatus(row.paymentStatus)}` },
     { header: "Status", render: (row) => <OrderStatusBadge status={row.orderStatus} /> },
     {
       header: "Actions",
@@ -117,6 +120,15 @@ export const OrdersPage = () => {
               {formatOrderStatus(value)}
             </option>
           ))}
+        </select>
+        <select
+          aria-label="Payment method"
+          value={paymentMethod}
+          onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod | "all")}
+        >
+          <option value="all">All payments</option>
+          <option value="COD">COD</option>
+          <option value="RAZORPAY">Online</option>
         </select>
       </div>
       {loading ? (

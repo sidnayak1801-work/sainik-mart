@@ -1,12 +1,16 @@
 import { Router } from "express";
 
-import { getAdminById, listAdmin, updateStatus } from "../controllers/order.controller";
+import { collectPayment, getAdminById, listAdmin, updateStatus } from "../controllers/order.controller";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { authenticate } from "../middleware/authenticate";
 import { requireAdmin } from "../middleware/requireRole";
 import { validate } from "../middleware/validate";
 import { idParamSchema } from "../validators/common.validators";
-import { adminOrderListQuerySchema, updateOrderStatusSchema } from "../validators/order.validators";
+import {
+  adminOrderListQuerySchema,
+  collectCodPaymentSchema,
+  updateOrderStatusSchema,
+} from "../validators/order.validators";
 
 const adminOrderRouter = Router();
 
@@ -19,6 +23,12 @@ adminOrderRouter.patch(
   validate(idParamSchema, "params"),
   validate(updateOrderStatusSchema),
   asyncHandler(updateStatus),
+);
+adminOrderRouter.patch(
+  "/:id/payment",
+  validate(idParamSchema, "params"),
+  validate(collectCodPaymentSchema),
+  asyncHandler(collectPayment),
 );
 
 export default adminOrderRouter;

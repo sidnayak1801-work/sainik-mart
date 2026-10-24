@@ -1,5 +1,5 @@
 import type { ApiSuccess } from "@/types/auth";
-import type { OrderDetail, OrderStatus, OrderSummary, Pagination } from "@/types/models";
+import type { OrderDetail, OrderStatus, OrderSummary, Pagination, PaymentMethod } from "@/types/models";
 
 import { api } from "./client";
 
@@ -8,6 +8,7 @@ export type OrderListQuery = {
   limit?: number;
   status?: OrderStatus;
   search?: string;
+  paymentMethod?: PaymentMethod;
 };
 
 export type OrderListResult = {
@@ -25,6 +26,7 @@ const toQuery = (params: OrderListQuery): string => {
   if (params.limit !== undefined) search.set("limit", String(params.limit));
   if (params.status) search.set("status", params.status);
   if (params.search) search.set("search", params.search);
+  if (params.paymentMethod) search.set("paymentMethod", params.paymentMethod);
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 };
@@ -44,5 +46,10 @@ export const getOrder = async (id: string): Promise<OrderDetail> => {
 
 export const updateOrderStatus = async (id: string, status: OrderStatus): Promise<OrderDetail> => {
   const response = await api.patch<ApiSuccess<OrderDetail>>(`/api/admin/orders/${id}/status`, { status });
+  return response.data;
+};
+
+export const collectCodPayment = async (id: string): Promise<OrderDetail> => {
+  const response = await api.patch<ApiSuccess<OrderDetail>>(`/api/admin/orders/${id}/payment`, { collected: true });
   return response.data;
 };

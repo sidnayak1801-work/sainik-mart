@@ -113,23 +113,39 @@ export const sendToUser = async (userId: string, payload: NotificationPayload): 
   );
 };
 
-export const sendAdminNewOrderNotification = async (orderId: string, totalAmount: number): Promise<void> => {
+export const sendAdminNewOrderNotification = async (
+  orderId: string,
+  totalAmount: number,
+  paymentMethod: "RAZORPAY" | "COD" = "RAZORPAY",
+): Promise<void> => {
   const rows = await prisma.deviceToken.findMany({
     where: { user: { role: "ADMIN" } },
     select: { token: true },
   });
   const shortId = orderId.replace(/-/g, "").slice(0, 8);
   const amount = Number.isInteger(totalAmount) ? String(totalAmount) : totalAmount.toFixed(2);
+  const payload: NotificationPayload =
+    paymentMethod === "COD"
+      ? {
+          title: "New COD Order Received",
+          body: `Order ${shortId} has been placed. Amount: ₹${amount}.`,
+          data: {
+            type: "ADMIN_ORDER_COD",
+            orderId,
+            paymentMethod: "COD",
+          },
+        }
+      : {
+          title: "New paid order",
+          body: `Order ${shortId} — ₹${amount}`,
+          data: {
+            type: "ADMIN_ORDER_PAID",
+            orderId,
+          },
+        };
   await sendToTokens(
     rows.map((row) => row.token),
-    {
-      title: "New paid order",
-      body: `Order ${shortId} — ₹${amount}`,
-      data: {
-        type: "ADMIN_ORDER_PAID",
-        orderId,
-      },
-    },
+    payload,
   );
 };
 

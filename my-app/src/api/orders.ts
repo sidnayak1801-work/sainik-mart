@@ -1,5 +1,5 @@
 import type { ApiSuccess } from "@/types/auth";
-import type { CreatedOrder, Order, OrderSummary, Pagination } from "@/types/models";
+import type { CreatedOrder, Order, OrderSummary, Pagination, PaymentMethod } from "@/types/models";
 
 import { api } from "./client";
 
@@ -25,8 +25,11 @@ const toQuery = (params: OrderListQuery): string => {
   return qs ? `?${qs}` : "";
 };
 
-export const createOrder = async (addressId: string): Promise<CreatedOrder> => {
-  const response = await api.post<ApiSuccess<CreatedOrder>>("/api/orders", { addressId });
+export const createOrder = async (
+  addressId: string,
+  paymentMethod: PaymentMethod = "RAZORPAY",
+): Promise<CreatedOrder> => {
+  const response = await api.post<ApiSuccess<CreatedOrder>>("/api/orders", { addressId, paymentMethod });
   return response.data;
 };
 

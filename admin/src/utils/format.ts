@@ -25,4 +25,20 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 
 export const formatOrderStatus = (status: string): string => ORDER_STATUS_LABELS[status] ?? status;
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  RAZORPAY: "Online",
+  COD: "COD",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Unpaid",
+  PAID: "Paid",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
+};
+
+export const formatPaymentMethod = (method: string): string => PAYMENT_METHOD_LABELS[method] ?? method;
+
+export const formatPaymentStatus = (status: string): string => PAYMENT_STATUS_LABELS[status] ?? status;
+
 export const shortId = (id: string): string => id.slice(0, 8);

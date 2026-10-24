@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
@@ -21,7 +21,7 @@ import { Loading } from "@/components/Loading";
 import { RazorpayCheckoutModal } from "@/components/RazorpayCheckoutModal";
 import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
-import type { Address, Cart, CartLineItem, CreatedOrder } from "@/types/models";
+import type { Address, Cart, CartLineItem, CreatedOrder, PaymentMethod } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<MainStackParamList, "Checkout">;
@@ -78,6 +78,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [payOrder, setPayOrder] = useState<CreatedOrder | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("RAZORPAY");
 
   const loadCart = useCallback(async () => {
     setCartError(null);
@@ -198,8 +199,14 @@ export function CheckoutScreen({ navigation, route }: Props) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const order = await createOrder(selectedAddressId);
+      const order = await createOrder(selectedAddressId, paymentMethod);
       await refreshCart();
+      if (paymentMethod === "COD") {
+        submittingRef.current = false;
+        setSubmitting(false);
+        navigation.replace("OrderConfirmation", { order });
+        return;
+      }
       if (!order.razorpay) {
         setSubmitError("Unable to start payment. Your order is saved under Orders.");
         submittingRef.current = false;
@@ -253,7 +260,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
               </View>
               <View style={styles.barAction}>
                 <Button
-                  title="PLACE ORDER"
+                  title={paymentMethod === "COD" ? "PLACE COD ORDER" : "PAY ONLINE"}
                   onPress={() => void onPlaceOrder()}
                   loading={submitting}
                   disabled={!canPlaceOrder}
@@ -332,6 +339,32 @@ export function CheckoutScreen({ navigation, route }: Props) {
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>₹{cart?.subtotal ?? 0}</Text>
           </View>
+        </View>
+      ) : null}
+
+      {canReview && selectedAddress ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment method</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: paymentMethod === "RAZORPAY" }}
+            onPress={() => setPaymentMethod("RAZORPAY")}
+          >
+            <Card style={paymentMethod === "RAZORPAY" ? styles.methodSelected : undefined}>
+              <Text style={styles.methodTitle}>Pay online</Text>
+              <Text style={styles.methodCopy}>Pay securely with UPI, card, or net banking.</Text>
+            </Card>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: paymentMethod === "COD" }}
+            onPress={() => setPaymentMethod("COD")}
+          >
+            <Card style={paymentMethod === "COD" ? styles.methodSelected : undefined}>
+              <Text style={styles.methodTitle}>Cash on Delivery</Text>
+              <Text style={styles.methodCopy}>Pay in cash when your order is delivered.</Text>
+            </Card>
+          </Pressable>
         </View>
       ) : null}
 
@@ -444,5 +477,19 @@ const styles = StyleSheet.create({
   barAction: {
     flex: 1,
     maxWidth: 220,
+  },
+  methodSelected: {
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  methodTitle: {
+    color: theme.colors.text,
+    fontSize: theme.typography.body,
+    fontWeight: "700",
+  },
+  methodCopy: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.body,
+    marginTop: theme.spacing.xs,
   },
 });

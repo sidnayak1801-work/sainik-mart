@@ -45,6 +45,7 @@ type AdminOrderSummary = {
   id: string;
   orderStatus: string;
   paymentStatus: string;
+  paymentMethod?: string;
   totalAmount: number;
   createdAt: string;
   itemCount: number;
@@ -56,6 +57,7 @@ type AdminOrderDetail = {
   addressId: string;
   orderStatus: string;
   paymentStatus: string;
+  paymentMethod?: string;
   subtotal: number;
   deliveryFee: number;
   discount: number;
@@ -116,8 +118,8 @@ const authJson = (token: string, method: string, path: string, body?: unknown) =
 const addToCart = (token: string, productIdValue: string, quantity: number) =>
   authJson(token, "POST", "/api/cart/items", { productId: productIdValue, quantity });
 
-const checkout = async (token: string, addressId: string) => {
-  const created = await authJson(token, "POST", "/api/orders", { addressId });
+const checkout = async (token: string, addressId: string, paymentMethod?: "RAZORPAY" | "COD") => {
+  const created = await authJson(token, "POST", "/api/orders", { addressId, paymentMethod });
   assert.equal(created.status, 201);
   return (created.body.data as { id: string }).id;
 };
@@ -451,4 +453,49 @@ test("cancelling does not restock and historical item prices stay frozen", async
   assert.equal(order.items[0]?.price, 80);
   assert.equal(order.items[0]?.total, 240);
   assert.equal(order.totalAmount, 240);
+});
+
+test("admin can collect COD only after dispatch and customers cannot", async () => {
+  assert.equal((await addToCart(customerAToken, productId, 1)).status, 201);
+  const codId = await checkout(customerAToken, addressAId, "COD");
+
+  const listed = await authJson(adminToken, "GET", "/api/admin/orders?paymentMethod=COD");
+  assert.equal(listed.status, 200);
+  const items = listed.body.data as AdminOrderSummary[];
+  assert.ok(items.some((item) => item.id === codId && item.paymentMethod === "COD"));
+
+  const detail = await authJson(adminToken, "GET", `/api/admin/orders/${codId}`);
+  assert.equal(detail.status, 200);
+  assert.equal((detail.body.data as AdminOrderDetail).paymentMethod, "COD");
+  assert.equal((detail.body.data as AdminOrderDetail).paymentStatus, "PENDING");
+
+  const tooSoon = await authJson(adminToken, "PATCH", `/api/admin/orders/${codId}/payment`, { collected: true });
+  assert.equal(tooSoon.status, 400);
+  assert.equal((await prisma.order.findUniqueOrThrow({ where: { id: codId } })).paymentStatus, "PENDING");
+
+  const customerCollect = await authJson(customerAToken, "PATCH", `/api/admin/orders/${codId}/payment`, {
+    collected: true,
+  });
+  assert.equal(customerCollect.status, 403);
+
+  const unauth = await json("PATCH", `/api/admin/orders/${codId}/payment`, { collected: true });
+  assert.equal(unauth.status, 401);
+
+  for (const status of ["CONFIRMED", "PACKING", "OUT_FOR_DELIVERY"] as const) {
+    assert.equal((await authJson(adminToken, "PATCH", `/api/admin/orders/${codId}/status`, { status })).status, 200);
+  }
+
+  const collected = await authJson(adminToken, "PATCH", `/api/admin/orders/${codId}/payment`, { collected: true });
+  assert.equal(collected.status, 200);
+  assert.equal((collected.body.data as AdminOrderDetail).paymentStatus, "PAID");
+  assert.equal((collected.body.data as AdminOrderDetail).orderStatus, "OUT_FOR_DELIVERY");
+  assert.equal((await prisma.payment.findUniqueOrThrow({ where: { orderId: codId } })).paymentStatus, "PAID");
+
+  const again = await authJson(adminToken, "PATCH", `/api/admin/orders/${codId}/payment`, { collected: true });
+  assert.equal(again.status, 400);
+
+  const onlineCollect = await authJson(adminToken, "PATCH", `/api/admin/orders/${orderASecondId}/payment`, {
+    collected: true,
+  });
+  assert.equal(onlineCollect.status, 400);
 });

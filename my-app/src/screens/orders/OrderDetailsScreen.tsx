@@ -13,7 +13,7 @@ import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
 import type { Order } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
-import { formatDateTime, formatOrderStatus, shortOrderId } from "@/utils/date";
+import { formatDateTime, formatOrderStatus, formatPaymentMethod, formatPaymentStatus, shortOrderId } from "@/utils/date";
 
 type Props = NativeStackScreenProps<MainStackParamList, "OrderDetails">;
 
@@ -87,6 +87,8 @@ export function OrderDetailsScreen({ route }: Props) {
               {formatOrderStatus(order.orderStatus)}
             </Text>
           </View>
+          <Text style={styles.payLine}>{formatPaymentMethod(order.paymentMethod)}</Text>
+          <Text style={styles.payLine}>Payment {formatPaymentStatus(order.paymentStatus)}</Text>
 
           <Card>
             <Text style={styles.sectionTitle}>Items</Text>
@@ -94,7 +96,21 @@ export function OrderDetailsScreen({ route }: Props) {
               <OrderItemRow key={item.id} item={item} />
             ))}
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalLabel}>Subtotal</Text>
+              <Text style={styles.totalMeta}>₹{order.subtotal}</Text>
+            </View>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Delivery</Text>
+              <Text style={styles.totalMeta}>₹{order.deliveryFee}</Text>
+            </View>
+            {order.discount > 0 ? (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Discount</Text>
+                <Text style={styles.totalMeta}>₹{order.discount}</Text>
+              </View>
+            ) : null}
+            <View style={styles.totalRow}>
+              <Text style={styles.payableLabel}>Amount payable</Text>
               <Text style={styles.totalValue}>₹{order.totalAmount}</Text>
             </View>
           </Card>
@@ -150,6 +166,10 @@ const styles = StyleSheet.create({
   delivered: {
     color: theme.colors.success,
   },
+  payLine: {
+    color: theme.colors.text,
+    fontSize: theme.typography.body,
+  },
   section: {
     gap: theme.spacing.sm,
   },
@@ -167,6 +187,14 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
   },
   totalLabel: {
+    fontSize: theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  totalMeta: {
+    fontSize: theme.typography.body,
+    color: theme.colors.text,
+  },
+  payableLabel: {
     fontSize: theme.typography.subheading,
     color: theme.colors.text,
     fontWeight: "600",

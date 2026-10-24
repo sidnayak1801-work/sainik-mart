@@ -26,3 +26,14 @@ export const formatOrderStatus = (status: string): string => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
 };
+
+export const formatPaymentMethod = (method?: string): string => {
+  if (method === "COD") return "Cash on Delivery";
+  if (method === "RAZORPAY") return "Online payment";
+  return method ? formatOrderStatus(method) : "Online payment";
+};
+
+export const formatPaymentStatus = (status?: string): string => {
+  if (!status) return "Pending";
+  return formatOrderStatus(status);
+};
