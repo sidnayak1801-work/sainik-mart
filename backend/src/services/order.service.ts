@@ -4,7 +4,6 @@ import type { AdminOrderListQuery, CreateOrderInput, OrderListQuery } from "../v
 import type { VerifyPaymentInput } from "../validators/payment.validators";
 import { AppError } from "../utils/AppError";
 import { logger } from "../utils/logger";
-import { notImplemented } from "../utils/notImplemented";
 import { prisma } from "../utils/prisma";
 import {
   sendAdminNewOrderNotification,
@@ -159,6 +158,58 @@ const assertPurchasable = (product: { isActive: boolean; category: { isActive: b
   }
 };
 
+const PENDING_RAZORPAY_WHERE = {
+  paymentMethod: PaymentMethod.RAZORPAY,
+  paymentStatus: PaymentStatus.PENDING,
+  orderStatus: OrderStatus.PENDING,
+} as const;
+
+const assertNoPendingRazorpay = async (
+  userId: string,
+  db: Prisma.TransactionClient | typeof prisma = prisma,
+) => {
+  const pending = await db.order.findFirst({
+    where: { userId, ...PENDING_RAZORPAY_WHERE },
+    select: { id: true },
+  });
+  if (pending) {
+    throw new AppError("Finish or abandon the previous payment", 409);
+  }
+};
+
+const decrementStock = async (
+  tx: Prisma.TransactionClient,
+  lines: Array<{ productId: string; quantity: number }>,
+) => {
+  for (const line of lines) {
+    const stock = await tx.product.updateMany({
+      where: {
+        id: line.productId,
+        isActive: true,
+        stockQuantity: { gte: line.quantity },
+        category: { isActive: true },
+      },
+      data: {
+        stockQuantity: { decrement: line.quantity },
+      },
+    });
+
+    if (stock.count !== 1) {
+      throw new AppError("Insufficient stock", 400);
+    }
+  }
+};
+
+const clearUserCart = async (tx: Prisma.TransactionClient, userId: string) => {
+  const cart = await tx.cart.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
+  if (cart) {
+    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+  }
+};
+
 export const createOrder = async (userId: string, input: CreateOrderInput) => {
   const paymentMethod = input.paymentMethod ?? PaymentMethod.RAZORPAY;
   const address = await prisma.address.findFirst({
@@ -170,10 +221,18 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     throw new AppError("Address not found", 404);
   }
 
+  if (paymentMethod === PaymentMethod.RAZORPAY) {
+    await assertNoPendingRazorpay(userId);
+  }
+
   const created = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`
       SELECT id FROM carts WHERE user_id = CAST(${userId} AS uuid) FOR UPDATE
     `;
+
+    if (paymentMethod === PaymentMethod.RAZORPAY) {
+      await assertNoPendingRazorpay(userId, tx);
+    }
 
     const cart = await tx.cart.findFirst({
       where: { userId },
@@ -232,27 +291,11 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
           total: line.total,
         },
       });
-
-      const stock = await tx.product.updateMany({
-        where: {
-          id: line.productId,
-          isActive: true,
-          stockQuantity: { gte: line.quantity },
-          category: { isActive: true },
-        },
-        data: {
-          stockQuantity: { decrement: line.quantity },
-        },
-      });
-
-      if (stock.count !== 1) {
-        throw new AppError("Insufficient stock", 400);
-      }
     }
 
-    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
     if (paymentMethod === PaymentMethod.COD) {
+      await decrementStock(tx, lines);
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
       await tx.payment.create({
         data: {
           orderId: order.id,
@@ -268,13 +311,12 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     });
   });
 
-  try {
-    await sendOrderCreatedNotification(userId, created.id);
-  } catch (error) {
-    logger.error("Order-created notification failed", error);
-  }
-
   if (paymentMethod === PaymentMethod.COD) {
+    try {
+      await sendOrderCreatedNotification(userId, created.id);
+    } catch (error) {
+      logger.error("Order-created notification failed", error);
+    }
     try {
       await sendAdminNewOrderNotification(created.id, toMoney(created.totalAmount), PaymentMethod.COD);
     } catch (error) {
@@ -283,31 +325,44 @@ export const createOrder = async (userId: string, input: CreateOrderInput) => {
     return serializeOrderDetail(created);
   }
 
-  const amountPaise = Math.round(toMoney(created.totalAmount) * 100);
-  const razorpayOrder = await createRazorpayOrder({
-    amountPaise,
-    receipt: created.id,
-  });
+  try {
+    const amountPaise = Math.round(toMoney(created.totalAmount) * 100);
+    const razorpayOrder = await createRazorpayOrder({
+      amountPaise,
+      receipt: created.id,
+    });
 
-  await prisma.payment.create({
-    data: {
-      orderId: created.id,
-      razorpayOrderId: razorpayOrder.id,
-      paymentStatus: PaymentStatus.PENDING,
-      paymentMethod: PaymentMethod.RAZORPAY,
-    },
-  });
+    await prisma.payment.create({
+      data: {
+        orderId: created.id,
+        razorpayOrderId: razorpayOrder.id,
+        paymentStatus: PaymentStatus.PENDING,
+        paymentMethod: PaymentMethod.RAZORPAY,
+      },
+    });
 
-  return {
-    ...serializeOrderDetail(created),
-    razorpay: {
-      keyId: getRazorpayKeyId(),
-      orderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      name: "Sainik Mart",
-    },
-  };
+    try {
+      await sendOrderCreatedNotification(userId, created.id);
+    } catch (error) {
+      logger.error("Order-created notification failed", error);
+    }
+
+    return {
+      ...serializeOrderDetail(created),
+      razorpay: {
+        keyId: getRazorpayKeyId(),
+        orderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "Sainik Mart",
+      },
+    };
+  } catch (error) {
+    await prisma.order.delete({ where: { id: created.id } }).catch((cleanupError) => {
+      logger.error("Failed to roll back unpaid Razorpay order", cleanupError);
+    });
+    throw error;
+  }
 };
 
 export const verifyPayment = async (userId: string, input: VerifyPaymentInput) => {
@@ -350,22 +405,29 @@ export const verifyPayment = async (userId: string, input: VerifyPaymentInput) =
     throw new AppError("Payment verification failed", 400);
   }
 
-  await prisma.$transaction([
-    prisma.payment.update({
+  await prisma.$transaction(async (tx) => {
+    await decrementStock(
+      tx,
+      order.items
+        .filter((item): item is typeof item & { productId: string } => Boolean(item.productId))
+        .map((item) => ({ productId: item.productId, quantity: item.quantity })),
+    );
+    await tx.payment.update({
       where: { id: payment.id },
       data: {
         paymentStatus: PaymentStatus.PAID,
         razorpayPaymentId: input.razorpayPaymentId,
       },
-    }),
-    prisma.order.update({
+    });
+    await tx.order.update({
       where: { id: order.id },
       data: {
         paymentStatus: PaymentStatus.PAID,
         orderStatus: OrderStatus.CONFIRMED,
       },
-    }),
-  ]);
+    });
+    await clearUserCart(tx, userId);
+  });
 
   try {
     await sendAdminNewOrderNotification(order.id, toMoney(order.totalAmount), PaymentMethod.RAZORPAY);
@@ -425,8 +487,32 @@ export const getOrderById = async (userId: string, id: string) => {
   return serializeOrderDetail(order);
 };
 
-export const cancelOrder = async (_userId: string, _id: string) => {
-  return notImplemented("Cancel order");
+export const cancelOrder = async (userId: string, id: string) => {
+  const order = await prisma.order.findFirst({
+    where: { id, userId },
+    include: orderInclude,
+  });
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  const unpaidRazorpay =
+    order.paymentMethod === PaymentMethod.RAZORPAY &&
+    order.paymentStatus === PaymentStatus.PENDING &&
+    order.orderStatus === OrderStatus.PENDING;
+
+  if (!unpaidRazorpay) {
+    throw new AppError("Only unpaid online orders can be cancelled", 400);
+  }
+
+  const cancelled = await prisma.order.update({
+    where: { id },
+    data: { orderStatus: OrderStatus.CANCELLED },
+    include: orderInclude,
+  });
+
+  return serializeOrder(cancelled);
 };
 
 export const listAdminOrders = async (query: AdminOrderListQuery) => {

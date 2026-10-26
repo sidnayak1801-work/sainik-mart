@@ -327,7 +327,30 @@ test("empty cart and invalid addresses are rejected", async () => {
   await authJson(customerAToken, "DELETE", `/api/cart/items/${(cart.body.data as { items: { id: string }[] }).items[0]?.id}`);
 });
 
-test("creates an order, snapshots prices, reduces stock, and clears the cart", async () => {
+const abandonUnpaidRazorpay = (userId: string) =>
+  prisma.order.updateMany({
+    where: {
+      userId,
+      paymentMethod: "RAZORPAY",
+      paymentStatus: "PENDING",
+      orderStatus: "PENDING",
+    },
+    data: { orderStatus: "CANCELLED" },
+  });
+
+const verifyCreated = (token: string, created: JsonResponse, paymentId: string) => {
+  const order = orderOf(created);
+  const razorpay = razorpayOf(created);
+  return authJson(token, "POST", "/api/payments/verify", {
+    orderId: order.id,
+    razorpayOrderId: razorpay.orderId,
+    razorpayPaymentId: paymentId,
+    razorpaySignature: signPayment(razorpay.orderId, paymentId),
+  });
+};
+
+test("creates an unpaid Razorpay order without taking stock or clearing the cart", async () => {
+  await abandonUnpaidRazorpay(customerAId);
   assert.equal((await addToCart(customerAToken, productAId, 2)).status, 201);
   assert.equal((await addToCart(customerAToken, productBId, 1)).status, 201);
 
@@ -391,19 +414,33 @@ test("creates an order, snapshots prices, reduces stock, and clears the cart", a
 
   assert.equal(
     (await prisma.product.findUniqueOrThrow({ where: { id: productAId } })).stockQuantity,
+    stockABefore,
+  );
+  assert.equal(
+    (await prisma.product.findUniqueOrThrow({ where: { id: productBId } })).stockQuantity,
+    stockBBefore,
+  );
+
+  const cart = await authJson(customerAToken, "GET", "/api/cart");
+  assert.equal(cart.status, 200);
+  assert.equal((cart.body.data as { items: unknown[] }).items.length, 2);
+
+  const paid = await verifyCreated(customerAToken, created, "pay_test_create");
+  assert.equal(paid.status, 200);
+  assert.equal(
+    (await prisma.product.findUniqueOrThrow({ where: { id: productAId } })).stockQuantity,
     stockABefore - 2,
   );
   assert.equal(
     (await prisma.product.findUniqueOrThrow({ where: { id: productBId } })).stockQuantity,
     stockBBefore - 1,
   );
-
-  const cart = await authJson(customerAToken, "GET", "/api/cart");
-  assert.equal(cart.status, 200);
-  assert.deepEqual((cart.body.data as { items: unknown[] }).items, []);
+  const cartAfter = await authJson(customerAToken, "GET", "/api/cart");
+  assert.deepEqual((cartAfter.body.data as { items: unknown[] }).items, []);
 });
 
 test("uses current product price after a catalog change", async () => {
+  await abandonUnpaidRazorpay(customerAId);
   assert.equal((await addToCart(customerAToken, productPriceId, 1)).status, 201);
   const patched = await authJson(adminToken, "PATCH", `/api/products/${productPriceId}`, { price: 120 });
   assert.equal(patched.status, 200);
@@ -417,6 +454,7 @@ test("uses current product price after a catalog change", async () => {
 });
 
 test("rejects insufficient stock and inactive products without writing an order", async () => {
+  await abandonUnpaidRazorpay(customerAId);
   assert.equal((await addToCart(customerAToken, productLowId, 2)).status, 201);
   const item = await prisma.cartItem.findFirstOrThrow({
     where: { productId: productLowId, cart: { userId: customerAId } },
@@ -451,7 +489,9 @@ test("rejects insufficient stock and inactive products without writing an order"
   await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
 });
 
-test("sums multiple products and prevents oversell on last unit", async () => {
+test("sums multiple products and prevents oversell on last unit at verify", async () => {
+  await abandonUnpaidRazorpay(customerAId);
+  await abandonUnpaidRazorpay(customerBId);
   assert.equal((await addToCart(customerAToken, productAId, 2)).status, 201);
   assert.equal((await addToCart(customerAToken, productBId, 3)).status, 201);
   assert.equal((await addToCart(customerAToken, productCId, 4)).status, 201);
@@ -463,16 +503,33 @@ test("sums multiple products and prevents oversell on last unit", async () => {
   assert.equal(order.items.find((item) => item.productId === productBId)?.total, 150);
   assert.equal(order.items.find((item) => item.productId === productCId)?.total, 100);
   assert.equal(order.totalAmount, 410);
+  assert.equal((await verifyCreated(customerAToken, created, "pay_test_sum")).status, 200);
 
   assert.equal((await addToCart(customerAToken, productSingleId, 1)).status, 201);
   assert.equal((await addToCart(customerBToken, productSingleId, 1)).status, 201);
 
   const first = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
   const second = await authJson(customerBToken, "POST", "/api/orders", { addressId: addressBId });
-  const statuses = [first.status, second.status].sort();
-  assert.deepEqual(statuses, [201, 400]);
+  assert.equal(first.status, 201);
+  assert.equal(second.status, 201);
+  assert.equal((await prisma.product.findUniqueOrThrow({ where: { id: productSingleId } })).stockQuantity, 1);
+
+  const paid = await verifyCreated(customerAToken, first, "pay_test_single_a");
+  const lost = await verifyCreated(customerBToken, second, "pay_test_single_b");
+  assert.equal(paid.status, 200);
+  assert.equal(lost.status, 400);
+  assert.equal((lost.body as { message?: string }).message, "Insufficient stock");
   assert.equal((await prisma.product.findUniqueOrThrow({ where: { id: productSingleId } })).stockQuantity, 0);
-  assert.equal(await prisma.order.count({ where: { userId: { in: [customerAId, customerBId] }, items: { some: { productId: productSingleId } } } }), 1);
+  assert.equal(
+    await prisma.order.count({
+      where: {
+        userId: { in: [customerAId, customerBId] },
+        paymentStatus: "PAID",
+        items: { some: { productId: productSingleId } },
+      },
+    }),
+    1,
+  );
 });
 
 test("same user concurrent checkout creates only one order", async () => {
@@ -496,9 +553,9 @@ test("same user concurrent checkout creates only one order", async () => {
   ]);
 
   const statuses = [first.status, second.status].sort();
-  assert.deepEqual(statuses, [201, 400]);
-  const failed = first.status === 400 ? first : second;
-  assert.equal((failed.body as { message?: string }).message, "Cart is empty");
+  assert.deepEqual(statuses, [201, 409]);
+  const failed = first.status === 409 ? first : second;
+  assert.equal((failed.body as { message?: string }).message, "Finish or abandon the previous payment");
   assert.equal(await prisma.order.count({ where: { userId: customerAId } }), before + 1);
   assert.equal(
     await prisma.order.count({
@@ -509,6 +566,7 @@ test("same user concurrent checkout creates only one order", async () => {
 });
 
 test("rejects inactive category and blocks deleting an address used by an order", async () => {
+  await abandonUnpaidRazorpay(customerAId);
   const category = await authJson(adminToken, "POST", "/api/categories", {
     name: `Day19 ${stamp} Inactive Cat`,
   });
@@ -605,6 +663,7 @@ test("lists only the authenticated user's orders, newest first, and paginates", 
 });
 
 test("returns own order details with snapshots and hides other users' orders", async () => {
+  await abandonUnpaidRazorpay(customerAId);
   await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
   assert.equal((await addToCart(customerAToken, productAId, 2)).status, 201);
   assert.equal((await addToCart(customerAToken, productBId, 1)).status, 201);
@@ -669,6 +728,8 @@ test("returns own order details with snapshots and hides other users' orders", a
 });
 
 test("verifies a Razorpay signature and rejects invalid or foreign payments", async () => {
+  await abandonUnpaidRazorpay(customerAId);
+  await abandonUnpaidRazorpay(customerBId);
   await prisma.cartItem.deleteMany({ where: { cart: { userId: customerAId } } });
   assert.equal((await addToCart(customerAToken, productCId, 1)).status, 201);
   const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
@@ -709,6 +770,8 @@ test("verifies a Razorpay signature and rejects invalid or foreign payments", as
     razorpaySignature: signPayment(razorpay.orderId, paymentId),
   });
   assert.equal(verified.status, 200);
+  const cartAfterPay = await authJson(customerAToken, "GET", "/api/cart");
+  assert.deepEqual((cartAfterPay.body.data as { items: unknown[] }).items, []);
   const paid = orderOf(verified);
   assert.equal(paid.paymentStatus, "PAID");
   assert.equal(paid.orderStatus, "CONFIRMED");
@@ -809,6 +872,7 @@ test("order creation succeeds when the notification sender throws", async () => 
   setNotificationSender(async () => {
     throw new Error("FCM down");
   });
+  await abandonUnpaidRazorpay(customerAId);
   assert.equal((await addToCart(customerAToken, productCId, 1)).status, 201);
   const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
   assert.equal(created.status, 201);

@@ -267,6 +267,10 @@ test("order create notifies and FCM failure does not fail the order", async () =
   const created = await authJson(customerAToken, "POST", "/api/orders", { addressId: addressAId });
   assert.equal(created.status, 201);
   const orderId = (created.body.data as { id: string }).id;
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { orderStatus: "CANCELLED" },
+  });
   const createdCall = notificationCalls.find(
     (call) => call.payload.data.type === "ORDER_CREATED" && call.payload.data.orderId === orderId,
   );
@@ -292,6 +296,15 @@ test("order create notifies and FCM failure does not fail the order", async () =
 
 test("admin status update notifies the customer and invalid transitions do not", async () => {
   notificationCalls.length = 0;
+  await prisma.order.updateMany({
+    where: {
+      userId: customerAId,
+      paymentMethod: "RAZORPAY",
+      paymentStatus: "PENDING",
+      orderStatus: "PENDING",
+    },
+    data: { orderStatus: "CANCELLED" },
+  });
   assert.equal(
     (await authJson(customerAToken, "POST", "/api/cart/items", { productId, quantity: 1 })).status,
     201,

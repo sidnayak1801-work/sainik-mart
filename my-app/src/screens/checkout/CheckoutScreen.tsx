@@ -6,7 +6,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { listAddresses } from "@/api/addresses";
 import { getCart } from "@/services/cartService";
 import { ApiError } from "@/api/client";
-import { createOrder } from "@/api/orders";
+import { cancelOrder, createOrder } from "@/api/orders";
 import { verifyPayment } from "@/api/payments";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -200,15 +200,15 @@ export function CheckoutScreen({ navigation, route }: Props) {
     setSubmitError(null);
     try {
       const order = await createOrder(selectedAddressId, paymentMethod);
-      await refreshCart();
       if (paymentMethod === "COD") {
+        await refreshCart();
         submittingRef.current = false;
         setSubmitting(false);
         navigation.replace("OrderConfirmation", { order });
         return;
       }
       if (!order.razorpay) {
-        setSubmitError("Unable to start payment. Your order is saved under Orders.");
+        setSubmitError("Unable to start payment. Please try again.");
         submittingRef.current = false;
         setSubmitting(false);
         return;
@@ -227,6 +227,10 @@ export function CheckoutScreen({ navigation, route }: Props) {
     setSubmitting(false);
   };
 
+  const abandonPayment = (orderId: string) => {
+    void cancelOrder(orderId).catch(() => undefined);
+  };
+
   const onPaymentSuccess = async (result: {
     razorpayOrderId: string;
     razorpayPaymentId: string;
@@ -240,9 +244,11 @@ export function CheckoutScreen({ navigation, route }: Props) {
         razorpayPaymentId: result.razorpayPaymentId,
         razorpaySignature: result.razorpaySignature,
       });
+      await refreshCart();
       closePayment();
       navigation.replace("OrderConfirmation", { order: paid });
     } catch (err) {
+      abandonPayment(payOrder.id);
       closePayment();
       setSubmitError(mapOrderError(err));
     }
@@ -380,10 +386,12 @@ export function CheckoutScreen({ navigation, route }: Props) {
         }}
         onSuccess={(result) => void onPaymentSuccess(result)}
         onCancel={() => {
+          if (payOrder) abandonPayment(payOrder.id);
           closePayment();
-          setSubmitError("Payment was cancelled. Your order is saved under Orders with pending payment.");
+          setSubmitError("Payment was cancelled. Your cart is unchanged.");
         }}
         onFailed={(message) => {
+          if (payOrder) abandonPayment(payOrder.id);
           closePayment();
           setSubmitError(message);
         }}

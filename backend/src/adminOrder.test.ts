@@ -219,8 +219,7 @@ before(async () => {
   assert.equal((await addToCart(customerAToken, productId, 2)).status, 201);
   orderAPendingId = await checkout(customerAToken, addressAId);
 
-  assert.equal((await addToCart(customerAToken, productId, 1)).status, 201);
-  orderASecondId = await checkout(customerAToken, addressAId);
+  orderASecondId = await checkout(customerAToken, addressAId, "COD");
 
   assert.equal((await addToCart(customerBToken, productId, 3)).status, 201);
   orderBConfirmedId = await checkout(customerBToken, addressBId);

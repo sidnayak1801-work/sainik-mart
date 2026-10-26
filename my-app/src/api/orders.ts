@@ -42,3 +42,8 @@ export const getOrderById = async (id: string): Promise<Order> => {
   const response = await api.get<ApiSuccess<Order>>(`/api/orders/${id}`);
   return response.data;
 };
+
+export const cancelOrder = async (id: string): Promise<Order> => {
+  const response = await api.post<ApiSuccess<Order>>(`/api/orders/${id}/cancel`);
+  return response.data;
+};
