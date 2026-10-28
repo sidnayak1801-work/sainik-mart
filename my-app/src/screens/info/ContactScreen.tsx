@@ -60,7 +60,7 @@ export function ContactScreen(_props: Props) {
   };
 
   return (
-    <Screen>
+    <Screen safeBottom>
       <Text style={styles.title}>Contact Us</Text>
       <Text style={styles.intro}>
         Questions about an order, delivery, or the catalogue? Reach the Sainik Mart desk or send a message below.

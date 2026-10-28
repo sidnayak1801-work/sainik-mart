@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { theme } from "@/theme";
 
@@ -12,6 +12,7 @@ type ScreenProps = {
   padded?: boolean;
   footer?: ReactNode;
   backgroundColor?: string;
+  safeBottom?: boolean;
 };
 
 export function Screen({
@@ -22,8 +23,15 @@ export function Screen({
   padded = true,
   footer,
   backgroundColor,
+  safeBottom = false,
 }: ScreenProps) {
-  const contentStyle = [styles.content, !padded && styles.contentFlush];
+  const insets = useSafeAreaInsets();
+  const bottomPad = safeBottom && !footer ? Math.max(insets.bottom, theme.spacing.sm) : undefined;
+  const contentStyle = [
+    styles.content,
+    !padded && styles.contentFlush,
+    bottomPad !== undefined ? { paddingBottom: (padded ? theme.spacing.md : 0) + bottomPad } : null,
+  ];
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={contentStyle}

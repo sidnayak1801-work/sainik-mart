@@ -18,7 +18,7 @@ import type { MainStackParamList } from "@/types/navigation";
 type Props = NativeStackScreenProps<MainStackParamList, "ProductList">;
 
 export function ProductListScreen({ navigation, route }: Props) {
-  const { categoryId, search, title } = route.params;
+  const { categoryId, search } = route.params;
   const [products, setProducts] = useState<Product[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [subcategoryId, setSubcategoryId] = useState<string | undefined>(undefined);
@@ -85,11 +85,15 @@ export function ProductListScreen({ navigation, route }: Props) {
     : "Try another category or search.";
 
   return (
-    <Screen>
-      <Text style={styles.title}>{title ?? "Products"}</Text>
+    <Screen safeBottom>
       {search ? <Text style={styles.subtitle}>Results for “{search}”</Text> : null}
       {categoryId && subcategories.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipScroller}
+          contentContainerStyle={styles.chips}
+        >
           <Pressable
             onPress={() => setSubcategoryId(undefined)}
             style={[styles.chip, !subcategoryId ? styles.chipSelected : null]}
@@ -118,11 +122,14 @@ export function ProductListScreen({ navigation, route }: Props) {
         <View style={styles.grid}>
           {products.map((product) => (
             <View key={product.id} style={styles.gridItem}>
-              <ProductCard
-                compact
-                product={product}
-                onPress={() => navigation.navigate("ProductDetails", { productId: product.id })}
-              />
+              <View style={styles.card}>
+                <ProductCard
+                  compact
+                  align="start"
+                  product={product}
+                  onPress={() => navigation.navigate("ProductDetails", { productId: product.id })}
+                />
+              </View>
             </View>
           ))}
         </View>
@@ -135,26 +142,30 @@ export function ProductListScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: theme.typography.heading,
-    fontWeight: theme.weight.semibold,
-    color: theme.colors.text,
-  },
   subtitle: {
     color: theme.colors.textSecondary,
   },
+  chipScroller: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   chips: {
     flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
     paddingBottom: theme.spacing.xs,
   },
   chip: {
+    height: 36,
+    flexGrow: 0,
+    flexShrink: 0,
+    alignSelf: "center",
+    justifyContent: "center",
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
   },
   chipSelected: {
     backgroundColor: theme.colors.primary,
@@ -163,6 +174,7 @@ const styles = StyleSheet.create({
   chipLabel: {
     color: theme.colors.textSecondary,
     fontWeight: theme.weight.medium,
+    fontSize: theme.typography.caption,
   },
   chipLabelSelected: {
     color: theme.colors.primaryText,
@@ -170,10 +182,19 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    marginHorizontal: -theme.spacing.xs,
   },
   gridItem: {
     width: "50%",
     paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
   },
 });

@@ -10,20 +10,22 @@ type ProductCardProps = {
   product: Product;
   onPress?: () => void;
   compact?: boolean;
+  align?: "center" | "start";
 };
 
 const hasDiscount = (product: Product): boolean => {
   return product.discountPrice !== null && product.discountPrice !== undefined;
 };
 
-export function ProductCard({ product, onPress, compact = false }: ProductCardProps) {
+export function ProductCard({ product, onPress, compact = false, align = "center" }: ProductCardProps) {
   const packSize = formatPackSize(product.packQuantity, product.packUnit);
+  const start = align === "start";
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={product.name}
       onPress={onPress}
-      style={styles.tile}
+      style={[styles.tile, start && styles.tileStart]}
     >
       <View style={styles.well}>
         {product.imageUrl ? (
@@ -36,11 +38,11 @@ export function ProductCard({ product, onPress, compact = false }: ProductCardPr
           <View style={styles.image} />
         )}
       </View>
-      <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
+      <Text style={[styles.name, compact && styles.nameCompact, start && styles.nameStart]} numberOfLines={2}>
         {product.name}
       </Text>
-      {packSize ? <Text style={styles.pack}>{packSize}</Text> : null}
-      <View style={styles.prices}>
+      {packSize ? <Text style={[styles.pack, start && styles.packStart]}>{packSize}</Text> : null}
+      <View style={[styles.prices, start && styles.pricesStart]}>
         {hasDiscount(product) ? (
           <>
             <Text style={[styles.price, compact && styles.priceCompact]}>₹{product.discountPrice}</Text>
@@ -59,6 +61,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     gap: theme.spacing.xs,
+  },
+  tileStart: {
+    alignItems: "flex-start",
   },
   well: {
     width: "100%",
@@ -85,10 +90,16 @@ const styles = StyleSheet.create({
   nameCompact: {
     minHeight: 32,
   },
+  nameStart: {
+    textAlign: "left",
+  },
   pack: {
     color: theme.colors.textSecondary,
     fontSize: theme.typography.caption,
     fontWeight: theme.weight.medium,
+  },
+  packStart: {
+    textAlign: "left",
   },
   prices: {
     flexDirection: "row",
@@ -96,6 +107,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: theme.spacing.xs,
     flexWrap: "wrap",
+  },
+  pricesStart: {
+    justifyContent: "flex-start",
+    alignSelf: "stretch",
   },
   price: {
     color: theme.colors.primary,
