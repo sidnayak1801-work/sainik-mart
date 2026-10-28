@@ -105,6 +105,8 @@ export type CreatedOrder = {
 
 export type OrderAddress = {
   id: string;
+  fullName: string;
+  mobile: string;
   addressLine: string;
   city: string;
   pincode: string;
@@ -126,6 +128,8 @@ export type Order = CreatedOrder & {
 
 export type Address = {
   id: string;
+  fullName: string;
+  mobile: string;
   addressLine: string;
   city: string;
   pincode: string;
@@ -136,6 +140,8 @@ export type Address = {
 };
 
 export type AddressInput = {
+  fullName: string;
+  mobile: string;
   addressLine: string;
   city: string;
   pincode: string;

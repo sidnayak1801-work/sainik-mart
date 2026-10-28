@@ -67,7 +67,7 @@ export function OrderDetailsScreen({ route }: Props) {
   const delivered = order?.orderStatus === "DELIVERED";
 
   return (
-    <Screen>
+    <Screen safeBottom>
       {loading ? <Loading /> : null}
       {error ? <ErrorMessage message={error} onRetry={() => void load()} /> : null}
       {!loading && order ? (
@@ -119,6 +119,8 @@ export function OrderDetailsScreen({ route }: Props) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Delivery Address</Text>
               <Card>
+                <Text style={styles.addressLine}>{order.address.fullName}</Text>
+                <Text style={styles.addressMeta}>{order.address.mobile}</Text>
                 <Text style={styles.addressLine}>{order.address.addressLine}</Text>
                 <Text style={styles.addressMeta}>
                   {order.address.city} - {order.address.pincode}

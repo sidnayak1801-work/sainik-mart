@@ -2,6 +2,7 @@ import { Prisma, type Address } from "@prisma/client";
 
 import type { CreateAddressInput, UpdateAddressInput } from "../validators/address.validators";
 import { AppError } from "../utils/AppError";
+import { normalizeIndianMobile } from "../utils/phone";
 import { prisma } from "../utils/prisma";
 
 const toCoord = (value: Prisma.Decimal | null): number | null => {
@@ -13,6 +14,8 @@ const toCoord = (value: Prisma.Decimal | null): number | null => {
 
 const serializeAddress = (address: Address) => ({
   id: address.id,
+  fullName: address.fullName,
+  mobile: address.mobile,
   addressLine: address.addressLine,
   city: address.city,
   pincode: address.pincode,
@@ -47,6 +50,8 @@ export const createAddress = async (userId: string, input: CreateAddressInput) =
   const address = await prisma.address.create({
     data: {
       userId,
+      fullName: input.fullName,
+      mobile: normalizeIndianMobile(input.mobile),
       addressLine: input.addressLine,
       city: input.city,
       pincode: input.pincode,
@@ -63,7 +68,10 @@ export const updateAddress = async (userId: string, id: string, input: UpdateAdd
 
   const address = await prisma.address.update({
     where: { id },
-    data: input,
+    data: {
+      ...input,
+      ...(input.mobile !== undefined ? { mobile: normalizeIndianMobile(input.mobile) } : {}),
+    },
   });
 
   return serializeAddress(address);

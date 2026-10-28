@@ -57,6 +57,8 @@ type OrderData = {
   items: OrderItemData[];
   address?: {
     id: string;
+    fullName: string;
+    mobile: string;
     addressLine: string;
     city: string;
     pincode: string;
@@ -218,6 +220,8 @@ before(async () => {
   productInactiveId = await createProduct("Inactive Later", 30, 10);
 
   const addressA = await authJson(customerAToken, "POST", "/api/addresses", {
+    fullName: "Anita Rao",
+    mobile: "9876543210",
     addressLine: "12 Order Street",
     city: "Delhi",
     pincode: "110001",
@@ -226,6 +230,8 @@ before(async () => {
   addressAId = (addressA.body.data as { id: string }).id;
 
   const addressB = await authJson(customerBToken, "POST", "/api/addresses", {
+    fullName: "Bala Iyer",
+    mobile: "9123456780",
     addressLine: "88 Other Street",
     city: "Mumbai",
     pincode: "400001",
@@ -688,6 +694,8 @@ test("returns own order details with snapshots and hides other users' orders", a
   assert.equal(order.paymentStatus, "PENDING");
   assert.equal(order.addressId, addressAId);
   assert.equal(order.address?.id, addressAId);
+  assert.equal(order.address?.fullName, "Anita Rao");
+  assert.equal(order.address?.mobile, "+919876543210");
   assert.equal(order.address?.addressLine, "12 Order Street");
   assert.equal(order.address?.city, "Delhi");
   assert.equal(order.address?.pincode, "110001");

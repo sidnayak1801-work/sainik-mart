@@ -69,6 +69,8 @@ export type OrderCustomer = {
 
 export type OrderAddress = {
   id: string;
+  fullName: string;
+  mobile: string;
   addressLine: string;
   city: string;
   pincode: string;

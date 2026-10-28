@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { FooterBar } from "@/components/FooterBar";
 import { OrderItemRow } from "@/components/OrderItemRow";
 import { Screen } from "@/components/Screen";
 import { theme } from "@/theme";
@@ -15,7 +16,33 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
   const { order } = route.params;
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <FooterBar safeBottom>
+          <View style={styles.actions}>
+            <Button
+              title="Continue Shopping"
+              onPress={() =>
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs", params: { screen: "Home" } }],
+                })
+              }
+            />
+            <Button
+              title="View orders"
+              variant="ghost"
+              onPress={() =>
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs", params: { screen: "Orders" } }],
+                })
+              }
+            />
+          </View>
+        </FooterBar>
+      }
+    >
       <View style={styles.body}>
         <Card style={styles.confirmCard}>
           <Text style={styles.eyebrow}>Thank you</Text>
@@ -58,6 +85,8 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
         {order.address ? (
           <Card>
             <Text style={styles.sectionTitle}>Delivery address</Text>
+            <Text style={styles.addressLine}>{order.address.fullName}</Text>
+            <Text style={styles.meta}>{order.address.mobile}</Text>
             <Text style={styles.addressLine}>{order.address.addressLine}</Text>
             <Text style={styles.meta}>
               {order.address.city} - {order.address.pincode}
@@ -65,25 +94,6 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
           </Card>
         ) : null}
       </View>
-      <Button
-        title="Continue Shopping"
-        onPress={() =>
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "MainTabs", params: { screen: "Home" } }],
-          })
-        }
-      />
-      <Button
-        title="View orders"
-        variant="ghost"
-        onPress={() =>
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "MainTabs", params: { screen: "Orders" } }],
-          })
-        }
-      />
     </Screen>
   );
 }
@@ -172,5 +182,9 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.typography.body,
     fontWeight: "600",
+  },
+  actions: {
+    flex: 1,
+    gap: theme.spacing.sm,
   },
 });

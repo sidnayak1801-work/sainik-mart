@@ -368,6 +368,8 @@ export const deleteAccount = async (userId: string): Promise<void> => {
     await tx.address.updateMany({
       where: { userId },
       data: {
+        fullName: "Deleted",
+        mobile: "+910000000000",
         addressLine: "Deleted",
         city: "Deleted",
         pincode: "000000",

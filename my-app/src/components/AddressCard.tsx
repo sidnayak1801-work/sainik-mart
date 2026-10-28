@@ -35,6 +35,8 @@ export function AddressCard({
             {selected ? <View style={styles.radioDot} /> : null}
           </View>
           <View style={styles.body}>
+            <Text style={styles.line}>{address.fullName}</Text>
+            <Text style={styles.meta}>{address.mobile}</Text>
             <Text style={styles.line}>{address.addressLine}</Text>
             <Text style={styles.meta}>
               {address.city} - {address.pincode}

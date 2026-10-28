@@ -191,6 +191,8 @@ model CartItem {
 model Address {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
+  fullName    String   @map("full_name") @db.VarChar(120)
+  mobile      String   @db.VarChar(20)
   addressLine String   @map("address_line") @db.VarChar(500)
   city        String   @db.VarChar(120)
   pincode     String   @db.VarChar(10)

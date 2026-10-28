@@ -122,6 +122,8 @@ before(async () => {
   productId = (product.body.data as { id: string }).id;
 
   const address = await authJson(customerAToken, "POST", "/api/addresses", {
+    fullName: "Anita Rao",
+    mobile: "9876543210",
     addressLine: "1 Push Lane",
     city: "Delhi",
     pincode: "110001",

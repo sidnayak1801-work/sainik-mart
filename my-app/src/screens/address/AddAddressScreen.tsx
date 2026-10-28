@@ -5,12 +5,14 @@ import { createAddress } from "@/api/addresses";
 import { ApiError } from "@/api/client";
 import { AddressForm } from "@/components/AddressForm";
 import { Screen } from "@/components/Screen";
+import { useAuth } from "@/context/AuthContext";
 import type { AddressInput } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
 
 type Props = NativeStackScreenProps<MainStackParamList, "AddAddress">;
 
 export function AddAddressScreen({ navigation }: Props) {
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +31,14 @@ export function AddAddressScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen>
-      <AddressForm mode="create" submitting={submitting} error={error} onSubmit={(input) => void onSubmit(input)} />
+    <Screen safeBottom>
+      <AddressForm
+        mode="create"
+        initial={{ fullName: user?.name ?? "", mobile: user?.phone ?? "" }}
+        submitting={submitting}
+        error={error}
+        onSubmit={(input) => void onSubmit(input)}
+      />
     </Screen>
   );
 }

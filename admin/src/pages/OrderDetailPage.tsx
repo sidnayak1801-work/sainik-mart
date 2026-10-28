@@ -187,6 +187,10 @@ export const OrderDetailPage = () => {
             <section className={styles.section}>
               <h2>Address</h2>
               <dl>
+                <dt>Full name</dt>
+                <dd>{order.address.fullName}</dd>
+                <dt>Mobile</dt>
+                <dd>{order.address.mobile}</dd>
                 <dt>Line</dt>
                 <dd>{order.address.addressLine}</dd>
                 <dt>City</dt>

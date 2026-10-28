@@ -65,7 +65,14 @@ const detail = (overrides: Partial<OrderDetail> = {}): OrderDetail => ({
       total: 160,
     },
   ],
-  address: { id: "addr-1", addressLine: "12 Order Street", city: "Delhi", pincode: "110001" },
+  address: {
+    id: "addr-1",
+    fullName: "Anita Rao",
+    mobile: "+911111111111",
+    addressLine: "12 Order Street",
+    city: "Delhi",
+    pincode: "110001",
+  },
   customer: { id: "cust-1", name: "Anita Rao", email: "anita@example.com", phone: "+911111111111" },
   ...overrides,
 });
@@ -211,7 +218,14 @@ describe("admin orders", () => {
             total: 240,
           },
         ],
-        address: { id: "addr-2", addressLine: "90 Bravo Road", city: "Nagpur", pincode: "440001" },
+        address: {
+          id: "addr-2",
+          fullName: "Bala Iyer",
+          mobile: "+922222222222",
+          addressLine: "90 Bravo Road",
+          city: "Nagpur",
+          pincode: "440001",
+        },
         customer: { id: "cust-2", name: "Bala Iyer", email: "bala@example.com", phone: "+922222222222" },
       }),
       [ORDER_C_ID]: detail({
@@ -231,7 +245,14 @@ describe("admin orders", () => {
             total: 80,
           },
         ],
-        address: { id: "addr-3", addressLine: "5 Cash Lane", city: "Pune", pincode: "411001" },
+        address: {
+          id: "addr-3",
+          fullName: "Chitra Nair",
+          mobile: "+933333333333",
+          addressLine: "5 Cash Lane",
+          city: "Pune",
+          pincode: "411001",
+        },
         customer: { id: "cust-3", name: "Chitra Nair", email: "chitra@example.com", phone: "+933333333333" },
       }),
     };

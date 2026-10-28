@@ -30,7 +30,7 @@ export function EditAddressScreen({ navigation, route }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen safeBottom>
       <AddressForm
         mode="edit"
         initial={address}

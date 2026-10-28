@@ -6,6 +6,8 @@ const indianPincode = z
   .regex(/^\d{6}$/, "Pincode must be a 6-digit Indian PIN code");
 
 export const createAddressSchema = z.object({
+  fullName: z.string().trim().min(1).max(120),
+  mobile: z.string().trim().min(1).max(20),
   addressLine: z.string().trim().min(1).max(500),
   city: z.string().trim().min(1).max(120),
   pincode: indianPincode,

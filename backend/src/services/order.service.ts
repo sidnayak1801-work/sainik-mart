@@ -40,6 +40,8 @@ const orderDetailInclude = {
   address: {
     select: {
       id: true,
+      fullName: true,
+      mobile: true,
       addressLine: true,
       city: true,
       pincode: true,
@@ -125,6 +127,8 @@ const serializeOrderDetail = (order: OrderWithDetails) => ({
   ...serializeOrder(order),
   address: {
     id: order.address.id,
+    fullName: order.address.fullName,
+    mobile: order.address.mobile,
     addressLine: order.address.addressLine,
     city: order.address.city,
     pincode: order.address.pincode,

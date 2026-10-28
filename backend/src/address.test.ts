@@ -18,11 +18,18 @@ type AuthData = {
 
 type AddressData = {
   id: string;
+  fullName: string;
+  mobile: string;
   addressLine: string;
   city: string;
   pincode: string;
   latitude: number | null;
   longitude: number | null;
+};
+
+const recipient = {
+  fullName: "Anita Rao",
+  mobile: "9876543210",
 };
 
 const MISSING_ID = "00000000-0000-4000-8000-000000000000";
@@ -111,6 +118,7 @@ test("address endpoints require a valid JWT", async () => {
   assert.equal(invalidGet.status, 401);
 
   const missingPost = await json("POST", "/api/addresses", {
+    ...recipient,
     addressLine: "123 Main Street",
     city: "Delhi",
     pincode: "110001",
@@ -132,13 +140,49 @@ test("new customer gets an empty address list", async () => {
 });
 
 test("create rejects invalid address data", async () => {
+  const missingName = await authJson(customerAToken, "POST", "/api/addresses", {
+    mobile: recipient.mobile,
+    addressLine: "123 Main Street",
+    city: "Delhi",
+    pincode: "110001",
+  });
+  assert.equal(missingName.status, 400);
+
+  const emptyName = await authJson(customerAToken, "POST", "/api/addresses", {
+    fullName: "   ",
+    mobile: recipient.mobile,
+    addressLine: "123 Main Street",
+    city: "Delhi",
+    pincode: "110001",
+  });
+  assert.equal(emptyName.status, 400);
+
+  const missingMobile = await authJson(customerAToken, "POST", "/api/addresses", {
+    fullName: recipient.fullName,
+    addressLine: "123 Main Street",
+    city: "Delhi",
+    pincode: "110001",
+  });
+  assert.equal(missingMobile.status, 400);
+
+  const invalidMobile = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
+    mobile: "12345",
+    addressLine: "123 Main Street",
+    city: "Delhi",
+    pincode: "110001",
+  });
+  assert.equal(invalidMobile.status, 400);
+
   const missingLine = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     city: "Delhi",
     pincode: "110001",
   });
   assert.equal(missingLine.status, 400);
 
   const emptyLine = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "   ",
     city: "Delhi",
     pincode: "110001",
@@ -146,6 +190,7 @@ test("create rejects invalid address data", async () => {
   assert.equal(emptyLine.status, 400);
 
   const missingCity = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "123 Main Street",
     pincode: "110001",
   });
@@ -153,6 +198,7 @@ test("create rejects invalid address data", async () => {
 
   for (const pincode of ["11000", "ABC123", "1234567"]) {
     const invalidPin = await authJson(customerAToken, "POST", "/api/addresses", {
+      ...recipient,
       addressLine: "123 Main Street",
       city: "Delhi",
       pincode,
@@ -161,6 +207,7 @@ test("create rejects invalid address data", async () => {
   }
 
   const invalidLat = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "123 Main Street",
     city: "Delhi",
     pincode: "110001",
@@ -169,6 +216,7 @@ test("create rejects invalid address data", async () => {
   assert.equal(invalidLat.status, 400);
 
   const invalidLng = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "123 Main Street",
     city: "Delhi",
     pincode: "110001",
@@ -179,6 +227,7 @@ test("create rejects invalid address data", async () => {
 
 test("create, list, update, and delete own addresses", async () => {
   const created = await authJson(customerAToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "123 Main Street, Sector 10",
     city: "Delhi",
     pincode: "110001",
@@ -189,6 +238,8 @@ test("create, list, update, and delete own addresses", async () => {
   assert.equal(created.status, 201);
   const address = addressOf(created);
   addressAId = address.id;
+  assert.equal(address.fullName, "Anita Rao");
+  assert.equal(address.mobile, "+919876543210");
   assert.equal(address.addressLine, "123 Main Street, Sector 10");
   assert.equal(address.city, "Delhi");
   assert.equal(address.pincode, "110001");
@@ -209,12 +260,16 @@ test("create, list, update, and delete own addresses", async () => {
   assert.deepEqual(addressesOf(otherList), []);
 
   const updated = await authJson(customerAToken, "PATCH", `/api/addresses/${addressAId}`, {
+    fullName: "Bala Iyer",
+    mobile: "9123456780",
     addressLine: "Updated Main Street",
     city: "Noida",
     pincode: "110002",
   });
   assert.equal(updated.status, 200);
   const afterUpdate = addressOf(updated);
+  assert.equal(afterUpdate.fullName, "Bala Iyer");
+  assert.equal(afterUpdate.mobile, "+919123456780");
   assert.equal(afterUpdate.addressLine, "Updated Main Street");
   assert.equal(afterUpdate.city, "Noida");
   assert.equal(afterUpdate.pincode, "110002");
@@ -234,6 +289,7 @@ test("create, list, update, and delete own addresses", async () => {
 
 test("cannot update or delete another user's address", async () => {
   const created = await authJson(customerBToken, "POST", "/api/addresses", {
+    ...recipient,
     addressLine: "88 Park Avenue",
     city: "Mumbai",
     pincode: "400001",

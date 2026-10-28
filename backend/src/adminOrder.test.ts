@@ -63,7 +63,14 @@ type AdminOrderDetail = {
   discount: number;
   totalAmount: number;
   items: OrderItemData[];
-  address: { id: string; addressLine: string; city: string; pincode: string };
+  address: {
+    id: string;
+    fullName: string;
+    mobile: string;
+    addressLine: string;
+    city: string;
+    pincode: string;
+  };
   customer: { id: string; name: string; email: string; phone: string };
 };
 
@@ -191,6 +198,8 @@ before(async () => {
   productId = (product.body.data as { id: string }).id;
 
   const addressA = await authJson(customerAToken, "POST", "/api/addresses", {
+    fullName: "Anita Rao",
+    mobile: "9876543210",
     addressLine: "27 Admin Street",
     city: "Pune",
     pincode: "411001",
@@ -199,6 +208,8 @@ before(async () => {
   addressAId = (addressA.body.data as { id: string }).id;
 
   const addressB = await authJson(customerBToken, "POST", "/api/addresses", {
+    fullName: "Bala Iyer",
+    mobile: "9123456780",
     addressLine: "90 Bravo Road",
     city: "Nagpur",
     pincode: "440001",
@@ -338,6 +349,8 @@ test("admin can read any order detail with snapshots and live address", async ()
   assert.equal(order.customer.id, customerBId);
   assert.equal(order.customer.email, customerBEmail);
   assert.equal(order.address.id, addressBId);
+  assert.equal(order.address.fullName, "Bala Iyer");
+  assert.equal(order.address.mobile, "+919123456780");
   assert.equal(order.address.addressLine, "90 Bravo Road");
   assert.equal(order.address.city, "Nagpur");
   assert.equal(order.address.pincode, "440001");
