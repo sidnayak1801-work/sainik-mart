@@ -309,8 +309,12 @@ export function CheckoutScreen({ navigation, route }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery Address</Text>
           <Card>
-            <Text style={styles.addressLine}>{selectedAddress.fullName}</Text>
-            <Text style={styles.addressMeta}>{selectedAddress.mobile}</Text>
+            {selectedAddress.fullName?.trim() ? (
+              <Text style={styles.addressLine}>{selectedAddress.fullName.trim()}</Text>
+            ) : null}
+            {selectedAddress.mobile?.trim() ? (
+              <Text style={styles.addressMeta}>{selectedAddress.mobile.trim()}</Text>
+            ) : null}
             <Text style={styles.addressLine}>{selectedAddress.addressLine}</Text>
             <Text style={styles.addressMeta}>
               {selectedAddress.city} - {selectedAddress.pincode}

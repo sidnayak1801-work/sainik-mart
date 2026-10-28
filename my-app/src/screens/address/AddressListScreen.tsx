@@ -20,7 +20,7 @@ import type { MainStackParamList } from "@/types/navigation";
 type Props = NativeStackScreenProps<MainStackParamList, "AddressList">;
 
 export function AddressListScreen({ navigation, route }: Props) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const selectForCheckout = Boolean(route.params?.selectForCheckout);
   const selectForLocation = Boolean(route.params?.selectForLocation);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -172,6 +172,8 @@ export function AddressListScreen({ navigation, route }: Props) {
               address={item}
               selected={selectedAddressId === item.id}
               disabled={deletingId === item.id}
+              fallbackName={user?.name}
+              fallbackMobile={user?.phone}
               onSelect={() => onSelect(item.id)}
               onEdit={() => navigation.navigate("EditAddress", { addressId: item.id, address: item })}
               onDelete={() => confirmDelete(item)}

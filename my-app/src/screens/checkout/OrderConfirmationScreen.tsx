@@ -85,8 +85,10 @@ export function OrderConfirmationScreen({ navigation, route }: Props) {
         {order.address ? (
           <Card>
             <Text style={styles.sectionTitle}>Delivery address</Text>
-            <Text style={styles.addressLine}>{order.address.fullName}</Text>
-            <Text style={styles.meta}>{order.address.mobile}</Text>
+            {order.address.fullName?.trim() ? (
+              <Text style={styles.addressLine}>{order.address.fullName.trim()}</Text>
+            ) : null}
+            {order.address.mobile?.trim() ? <Text style={styles.meta}>{order.address.mobile.trim()}</Text> : null}
             <Text style={styles.addressLine}>{order.address.addressLine}</Text>
             <Text style={styles.meta}>
               {order.address.city} - {order.address.pincode}

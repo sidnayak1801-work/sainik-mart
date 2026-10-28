@@ -119,8 +119,12 @@ export function OrderDetailsScreen({ route }: Props) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Delivery Address</Text>
               <Card>
-                <Text style={styles.addressLine}>{order.address.fullName}</Text>
-                <Text style={styles.addressMeta}>{order.address.mobile}</Text>
+                {order.address.fullName?.trim() ? (
+                  <Text style={styles.addressLine}>{order.address.fullName.trim()}</Text>
+                ) : null}
+                {order.address.mobile?.trim() ? (
+                  <Text style={styles.addressMeta}>{order.address.mobile.trim()}</Text>
+                ) : null}
                 <Text style={styles.addressLine}>{order.address.addressLine}</Text>
                 <Text style={styles.addressMeta}>
                   {order.address.city} - {order.address.pincode}

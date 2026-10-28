@@ -8,19 +8,27 @@ type AddressCardProps = {
   address: Address;
   selected: boolean;
   disabled?: boolean;
+  fallbackName?: string | null;
+  fallbackMobile?: string | null;
   onSelect: () => void;
   onEdit: () => void;
   onDelete: () => void;
 };
 
+const present = (value?: string | null): string => value?.trim() ?? "";
+
 export function AddressCard({
   address,
   selected,
   disabled = false,
+  fallbackName,
+  fallbackMobile,
   onSelect,
   onEdit,
   onDelete,
 }: AddressCardProps) {
+  const fullName = present(address.fullName) || present(fallbackName);
+  const mobile = present(address.mobile) || present(fallbackMobile);
   return (
     <Pressable
       accessibilityRole="button"
@@ -35,8 +43,8 @@ export function AddressCard({
             {selected ? <View style={styles.radioDot} /> : null}
           </View>
           <View style={styles.body}>
-            <Text style={styles.line}>{address.fullName}</Text>
-            <Text style={styles.meta}>{address.mobile}</Text>
+            {fullName ? <Text style={styles.line}>{fullName}</Text> : null}
+            {mobile ? <Text style={styles.meta}>{mobile}</Text> : null}
             <Text style={styles.line}>{address.addressLine}</Text>
             <Text style={styles.meta}>
               {address.city} - {address.pincode}
