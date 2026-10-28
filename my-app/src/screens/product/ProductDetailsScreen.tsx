@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { ApiError } from "@/api/client";
@@ -11,6 +12,7 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import { FooterBar } from "@/components/FooterBar";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { useCart } from "@/context/CartContext";
 import { theme } from "@/theme";
 import type { Product } from "@/types/models";
 import type { MainStackParamList } from "@/types/navigation";
@@ -19,8 +21,9 @@ import { formatPackSize } from "@/utils/packSize";
 
 type Props = NativeStackScreenProps<MainStackParamList, "ProductDetails">;
 
-export function ProductDetailsScreen({ route }: Props) {
+export function ProductDetailsScreen({ navigation, route }: Props) {
   const { productId } = route.params;
+  const { itemCount } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +58,22 @@ export function ProductDetailsScreen({ route }: Props) {
               <Text style={styles.footerPrice}>₹{discounted ?? product.price}</Text>
             </View>
             <View style={styles.footerAction}>
-              <CartQtyControls product={product} />
+              <View style={styles.qtyWrap}>
+                <CartQtyControls product={product} />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View cart"
+                onPress={() => navigation.navigate("MainTabs", { screen: "Cart" })}
+                style={styles.cartButton}
+              >
+                <Ionicons name="cart" size={22} color={theme.colors.primaryText} />
+                {itemCount > 0 ? (
+                  <View style={styles.cartBadge}>
+                    <Text style={styles.cartBadgeLabel}>{itemCount > 99 ? "99+" : String(itemCount)}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
             </View>
           </FooterBar>
         ) : null
@@ -148,6 +166,41 @@ const styles = StyleSheet.create({
   },
   footerAction: {
     flex: 1,
-    maxWidth: 200,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: theme.spacing.sm,
+  },
+  qtyWrap: {
+    flexShrink: 1,
+    minWidth: 140,
+  },
+  cartButton: {
+    width: 48,
+    height: 48,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: theme.radius.button,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: theme.colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartBadgeLabel: {
+    color: theme.colors.primaryText,
+    fontSize: 10,
+    fontWeight: theme.weight.bold,
   },
 });
