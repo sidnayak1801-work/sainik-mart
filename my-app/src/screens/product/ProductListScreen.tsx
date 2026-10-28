@@ -122,14 +122,11 @@ export function ProductListScreen({ navigation, route }: Props) {
         <View style={styles.grid}>
           {products.map((product) => (
             <View key={product.id} style={styles.gridItem}>
-              <View style={styles.card}>
-                <ProductCard
-                  compact
-                  align="start"
-                  product={product}
-                  onPress={() => navigation.navigate("ProductDetails", { productId: product.id })}
-                />
-              </View>
+              <ProductCard
+                compact
+                product={product}
+                onPress={() => navigation.navigate("ProductDetails", { productId: product.id })}
+              />
             </View>
           ))}
         </View>
@@ -188,13 +185,5 @@ const styles = StyleSheet.create({
     width: "50%",
     paddingHorizontal: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.sm,
   },
 });

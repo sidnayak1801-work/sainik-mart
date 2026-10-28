@@ -17,7 +17,7 @@ const hasDiscount = (product: Product): boolean => {
   return product.discountPrice !== null && product.discountPrice !== undefined;
 };
 
-export function ProductCard({ product, onPress, compact = false, align = "center" }: ProductCardProps) {
+export function ProductCard({ product, onPress, compact = false, align = "start" }: ProductCardProps) {
   const packSize = formatPackSize(product.packQuantity, product.packUnit);
   const start = align === "start";
   return (
@@ -61,6 +61,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     gap: theme.spacing.xs,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
+    overflow: "hidden",
   },
   tileStart: {
     alignItems: "flex-start",
