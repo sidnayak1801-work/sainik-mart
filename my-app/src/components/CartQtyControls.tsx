@@ -10,9 +10,10 @@ import type { Product } from "@/types/models";
 
 type CartQtyControlsProps = {
   product: Product;
+  compact?: boolean;
 };
 
-export function CartQtyControls({ product }: CartQtyControlsProps) {
+export function CartQtyControls({ product, compact = false }: CartQtyControlsProps) {
   const { cart, quantityFor, applyCart } = useCart();
   const quantity = quantityFor(product.id);
   const [busy, setBusy] = useState(false);
@@ -36,23 +37,30 @@ export function CartQtyControls({ product }: CartQtyControlsProps) {
   };
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, compact && styles.wrapCompact]}>
       {quantity <= 0 ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add to cart"
           onPress={() => void changeTo(1)}
           disabled={busy || outOfStock}
-          style={[styles.addButton, (busy || outOfStock) && styles.disabled]}
+          style={[
+            styles.addButton,
+            compact && styles.addButtonCompact,
+            (busy || outOfStock) && styles.disabled,
+          ]}
         >
           {busy ? (
-            <ActivityIndicator color={theme.colors.primaryText} />
+            <ActivityIndicator color={theme.colors.primaryText} size="small" />
           ) : (
-            <Text style={styles.addLabel}>{outOfStock ? "Out of stock" : "Add to cart"}</Text>
+            <Text style={[styles.addLabel, compact && styles.addLabelCompact]}>
+              {outOfStock ? (compact ? "Sold" : "Out of stock") : compact ? "ADD" : "Add to cart"}
+            </Text>
           )}
         </Pressable>
       ) : (
         <QtyStepper
+          compact={compact}
           quantity={quantity}
           onDecrease={() => void changeTo(quantity - 1)}
           onIncrease={() => void changeTo(quantity + 1)}
@@ -60,7 +68,11 @@ export function CartQtyControls({ product }: CartQtyControlsProps) {
           busy={busy}
         />
       )}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text style={styles.error} numberOfLines={compact ? 1 : undefined}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -68,6 +80,12 @@ export function CartQtyControls({ product }: CartQtyControlsProps) {
 const styles = StyleSheet.create({
   wrap: {
     gap: theme.spacing.sm,
+  },
+  wrapCompact: {
+    alignSelf: "flex-end",
+    minWidth: 88,
+    maxWidth: 110,
+    gap: 2,
   },
   addButton: {
     backgroundColor: theme.colors.primary,
@@ -77,10 +95,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: theme.spacing.md,
   },
+  addButtonCompact: {
+    minHeight: 32,
+    minWidth: 64,
+    paddingHorizontal: theme.spacing.sm,
+  },
   addLabel: {
     color: theme.colors.primaryText,
     fontSize: theme.typography.body,
     fontWeight: theme.weight.semibold,
+  },
+  addLabelCompact: {
+    fontSize: theme.typography.caption,
   },
   disabled: {
     opacity: 0.65,

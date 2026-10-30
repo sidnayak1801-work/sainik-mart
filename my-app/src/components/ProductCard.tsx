@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { CartQtyControls } from "@/components/CartQtyControls";
 import { theme } from "@/theme";
 import type { Product } from "@/types/models";
 import { cloudinaryImage } from "@/utils/image";
@@ -41,16 +42,27 @@ export function ProductCard({ product, onPress, compact = false, align = "start"
       <Text style={[styles.name, compact && styles.nameCompact, start && styles.nameStart]} numberOfLines={2}>
         {product.name}
       </Text>
-      {packSize ? <Text style={[styles.pack, start && styles.packStart]}>{packSize}</Text> : null}
-      <View style={[styles.prices, start && styles.pricesStart]}>
-        {hasDiscount(product) ? (
-          <>
-            <Text style={[styles.price, compact && styles.priceCompact]}>₹{product.discountPrice}</Text>
-            <Text style={[styles.original, compact && styles.originalCompact]}>₹{product.price}</Text>
-          </>
-        ) : (
-          <Text style={[styles.price, compact && styles.priceCompact]}>₹{product.price}</Text>
-        )}
+      <View style={styles.footer}>
+        <View style={styles.meta}>
+          {packSize ? <Text style={[styles.pack, start && styles.packStart]}>{packSize}</Text> : null}
+          <View style={[styles.prices, start && styles.pricesStart]}>
+            {hasDiscount(product) ? (
+              <>
+                <Text style={[styles.price, compact && styles.priceCompact]}>₹{product.discountPrice}</Text>
+                <Text style={[styles.original, compact && styles.originalCompact]}>₹{product.price}</Text>
+              </>
+            ) : (
+              <Text style={[styles.price, compact && styles.priceCompact]}>₹{product.price}</Text>
+            )}
+          </View>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={(event) => event.stopPropagation()}
+          style={styles.qtySlot}
+        >
+          <CartQtyControls compact product={product} />
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -98,6 +110,21 @@ const styles = StyleSheet.create({
   },
   nameStart: {
     textAlign: "left",
+  },
+  footer: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: theme.spacing.xs,
+  },
+  meta: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  qtySlot: {
+    flexShrink: 0,
   },
   pack: {
     color: theme.colors.textSecondary,
