@@ -9,7 +9,13 @@ import {
 import { ApiError, setOnUnauthorized } from "@/api/client";
 import { registerPushForUser, subscribePushTokenRefresh, unregisterPushForUser } from "@/notifications/push";
 import { removeSelectedAddressId } from "@/storage/addressStorage";
-import { getToken, removeToken, setToken } from "@/storage/authStorage";
+import {
+  clearSession,
+  getCachedUser,
+  getToken,
+  setCachedUser,
+  setToken,
+} from "@/storage/authStorage";
 import type { AuthState, User } from "@/types/auth";
 
 type AuthContextValue = AuthState & {
@@ -22,6 +28,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const persistSession = async (user: User, accessToken: string): Promise<User> => {
   await setToken(accessToken);
+  await setCachedUser(user);
   return user;
 };
 
@@ -31,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setOnUnauthorized(() => {
-      void removeToken();
+      void clearSession();
       setUser(null);
     });
 
@@ -40,18 +47,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const restoreSession = async () => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          setUser(null);
-          return;
-        }
-
-        const currentUser = await getMe();
-        setUser(currentUser);
-      } catch {
-        await removeToken();
+      const token = await getToken();
+      const cachedUser = await getCachedUser();
+      if (!token) {
+        await clearSession();
         setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
+
+      try {
+        const currentUser = await getMe();
+        await setCachedUser(currentUser);
+        setUser(currentUser);
+      } catch (err) {
+        const unauthorized = err instanceof ApiError && err.status === 401;
+        if (unauthorized) {
+          await clearSession();
+          setUser(null);
+        } else if (cachedUser) {
+          setUser(cachedUser);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -82,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Client session must still clear if the network call fails.
     }
-    await removeToken();
+    await clearSession();
     await removeSelectedAddressId();
     setUser(null);
   }, []);
@@ -90,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async () => {
     await unregisterPushForUser();
     await deleteAccountRequest();
-    await removeToken();
+    await clearSession();
     await removeSelectedAddressId();
     setUser(null);
   }, []);
