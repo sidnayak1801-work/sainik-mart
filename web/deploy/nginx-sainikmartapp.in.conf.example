@@ -1,0 +1,25 @@
+# Example apex server block for the Sainik Mart public website.
+# Install this as a NEW site. Do not edit the existing api.sainikmartapp.in
+# or admin.sainikmartapp.in server blocks.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name sainikmartapp.in www.sainikmartapp.in;
+
+    root /var/www/sainik-mart/web/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff2)$ {
+        expires 7d;
+        add_header Cache-Control "public";
+        try_files $uri =404;
+    }
+}
+
+# After copying this file, obtain TLS with certbot for sainikmartapp.in.
+# Existing Let's Encrypt certs for api. and admin. must stay unchanged.

@@ -8,6 +8,7 @@
     "android": "npm run android --prefix my-app",
     "web": "npm run web --prefix my-app",
     "admin": "npm run dev --prefix admin",
+    "landing": "npm run dev --prefix web",
     "eas:preview": "npm exec --prefix my-app -- eas-cli build --platform android --profile preview",
     "eas:production": "npm exec --prefix my-app -- eas-cli build --platform android --profile production"
   },
