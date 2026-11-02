@@ -6,7 +6,9 @@ import { logger } from "./utils/logger";
 const app = createApp();
 
 const server = app.listen(env.PORT, "0.0.0.0", () => {
-  logger.info(`Sainik-mart API listening on http://0.0.0.0:${env.PORT}`);
+  logger.info(
+    `Sainik-mart API listening on http://0.0.0.0:${env.PORT} jwtAccessExpiresIn=${env.JWT_ACCESS_EXPIRES_IN}`,
+  );
 });
 
 const shutdown = async (signal: string) => {
