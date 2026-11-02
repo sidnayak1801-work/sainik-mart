@@ -14,17 +14,17 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/80 bg-canvas/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
-        <a href="#home" className="flex items-center gap-2.5">
+    <header className="sticky top-0 z-40 border-b border-line/80 bg-canvas/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:h-[4.25rem] sm:px-6">
+        <a href="#home" className="flex min-w-0 items-center gap-2.5">
           <img
             src="/images/logo.png"
             alt=""
             width={40}
             height={40}
-            className="h-10 w-10 rounded-full shadow-sm"
+            className="h-10 w-10 shrink-0 rounded-full shadow-sm"
           />
-          <span className="text-[15px] font-bold tracking-tight text-primary-dark">
+          <span className="truncate text-[15px] font-bold tracking-tight text-primary-dark">
             {appConfig.appName}
           </span>
         </a>
@@ -41,11 +41,11 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <InstallButton variant="nav" className="hidden sm:inline-flex" />
+        <div className="flex shrink-0 items-center gap-2">
+          <InstallButton variant="nav" className="px-3.5 sm:px-5" onNavigate={() => setOpen(false)} />
           <button
             type="button"
-            className="rounded-full p-2 text-primary-dark lg:hidden"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 text-primary-dark lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((value) => !value)}
@@ -70,9 +70,6 @@ export default function Navbar() {
               </a>
             ))}
           </nav>
-          <div className="mt-3">
-            <InstallButton className="w-full" />
-          </div>
         </div>
       ) : null}
     </header>

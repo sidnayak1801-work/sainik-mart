@@ -7,22 +7,22 @@ export default function AppDownload() {
   const androidReady = hasApkDownload() || hasPlayStoreListing();
 
   return (
-    <section id="download" className="bg-canvas px-4 py-20 sm:px-6">
-      <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-primary-dark text-white shadow-xl">
-        <div className="grid items-center gap-10 px-6 py-12 sm:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:px-14 lg:py-16">
+    <section id="download" className="bg-canvas px-4 py-12 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-[1.5rem] bg-primary-dark text-white shadow-xl sm:rounded-[2rem]">
+        <div className="grid items-center gap-8 px-5 py-10 sm:gap-10 sm:px-10 sm:py-12 lg:grid-cols-[1.1fr_0.9fr] lg:px-14 lg:py-16">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Get the app</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
               Your Everyday Shopping Starts Here.
             </h2>
-            <p className="mt-4 max-w-lg text-base leading-relaxed text-white/75">
+            <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-white/75 sm:text-base">
               Download Sainik Mart and make everyday shopping easier.
             </p>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-center">
               <InstallButton
                 label="Install Sainik Mart"
                 variant="light"
-                className="px-6 py-3 text-[15px]"
+                className="w-full px-6 py-3 text-[15px] sm:w-auto"
               />
               <span className="inline-flex items-center gap-2 text-sm text-white/80">
                 <Smartphone size={16} />

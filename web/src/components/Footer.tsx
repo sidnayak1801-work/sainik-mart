@@ -11,8 +11,8 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-primary-dark text-white">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.3fr_0.8fr_0.9fr]">
+    <footer className="bg-primary-dark pb-[env(safe-area-inset-bottom)] text-white">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 sm:py-14 md:grid-cols-[1.3fr_0.8fr_0.9fr]">
         <div>
           <a href="#home" className="inline-flex items-center gap-3">
             <img src="/images/logo.png" alt="" width={44} height={44} className="h-11 w-11 rounded-full" />
@@ -27,7 +27,7 @@ export default function Footer() {
           <ul className="mt-4 space-y-2">
             {nav.map((item) => (
               <li key={item.href}>
-                <a href={item.href} className="text-sm text-white/75 transition hover:text-white">
+                <a href={item.href} className="inline-flex min-h-11 items-center text-sm text-white/75 transition hover:text-white">
                   {item.label}
                 </a>
               </li>

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { detectDevice, type DeviceKind } from "../lib/device";
-import { resolveInstallIntent, startApkDownload, type InstallIntent } from "../lib/install";
+import { resolveInstallIntent, type InstallIntent } from "../lib/install";
 import InstallDialog from "./InstallDialog";
 
 type InstallContextValue = {
@@ -23,19 +23,11 @@ export default function InstallProvider({ children }: { children: ReactNode }) {
   const device = useMemo(() => detectDevice(), []);
   const intent = useMemo(() => resolveInstallIntent(device), [device]);
   const [open, setOpen] = useState(false);
-  const [dialogIntent, setDialogIntent] = useState<InstallIntent>(intent);
 
   const openInstall = useCallback(() => {
-    if (intent.kind === "playstore") {
-      window.location.assign(intent.url);
+    if (intent.kind === "download" || intent.kind === "playstore") {
       return;
     }
-
-    if (intent.kind === "download") {
-      startApkDownload(intent.url);
-    }
-
-    setDialogIntent(intent);
     setOpen(true);
   }, [intent]);
 
@@ -47,7 +39,7 @@ export default function InstallProvider({ children }: { children: ReactNode }) {
   return (
     <InstallContext.Provider value={value}>
       {children}
-      <InstallDialog open={open} intent={dialogIntent} onClose={() => setOpen(false)} />
+      <InstallDialog open={open} intent={intent} onClose={() => setOpen(false)} />
     </InstallContext.Provider>
   );
 }

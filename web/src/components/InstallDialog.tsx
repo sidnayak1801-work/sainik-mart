@@ -43,16 +43,11 @@ const copyForIntent = (intent: InstallIntent): DialogCopy => {
         showQr: false,
       };
     case "desktop":
-      if (!hasApkDownload() && !hasPlayStoreListing()) {
-        return {
-          title: "Open this page on Android",
-          body: "Installation will be available soon. Scan the code or open sainikmartapp.in on your Android phone when the app is ready to install.",
-          showQr: true,
-        };
-      }
       return {
-        title: "Install on your Android phone",
-        body: "Scan the code or open this website on your Android device to install Sainik Mart. The app is not installed from a desktop browser.",
+        title: "Open this page on Android",
+        body: hasApkDownload() || hasPlayStoreListing()
+          ? "Scan the code or open this website on your Android phone to install Sainik Mart."
+          : "Installation will be available soon. Scan the code or open sainikmartapp.in on your Android phone when the app is ready to install.",
         showQr: true,
       };
   }

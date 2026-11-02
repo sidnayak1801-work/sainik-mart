@@ -21,9 +21,9 @@ const steps: { title: string; body: string; icon: LucideIcon }[] = [
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">How it works</p>
-        <h2 className="mt-3 max-w-xl text-3xl font-extrabold tracking-tight text-primary-dark sm:text-4xl">
+        <h2 className="mt-3 max-w-xl text-2xl font-extrabold tracking-tight text-primary-dark sm:text-3xl lg:text-4xl">
           Three steps to your next shop
         </h2>
         <ol className="mt-12 grid gap-6 lg:grid-cols-3">

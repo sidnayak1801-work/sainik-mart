@@ -13,9 +13,9 @@ const visuals: Record<CategoryId, { icon: LucideIcon; well: string; mark: string
 export default function Categories() {
   return (
     <section id="categories" className="bg-canvas">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Shop the aisle</p>
-        <h2 className="mt-3 max-w-xl text-3xl font-extrabold tracking-tight text-primary-dark sm:text-4xl">
+        <h2 className="mt-3 max-w-xl text-2xl font-extrabold tracking-tight text-primary-dark sm:text-3xl lg:text-4xl">
           Categories you will recognise
         </h2>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
@@ -37,7 +37,7 @@ export default function Categories() {
                   </span>
                 </div>
                 <div className="p-5">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-lg font-semibold text-ink">{category.name}</h3>
                     {category.fromCatalog ? (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">

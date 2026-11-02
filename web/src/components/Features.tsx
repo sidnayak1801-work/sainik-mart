@@ -36,9 +36,9 @@ const features: { title: string; body: string; icon: LucideIcon }[] = [
 export default function Features() {
   return (
     <section id="features" className="bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Why Sainik Mart?</p>
-        <h2 className="mt-3 max-w-xl text-3xl font-extrabold tracking-tight text-primary-dark sm:text-4xl">
+        <h2 className="mt-3 max-w-xl text-2xl font-extrabold tracking-tight text-primary-dark sm:text-3xl lg:text-4xl">
           Everything You Need, All in One Place.
         </h2>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

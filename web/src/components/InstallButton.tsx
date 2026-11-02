@@ -1,10 +1,12 @@
 import { appConfig } from "../config/appConfig";
+import { isSameOriginApk } from "../lib/install";
 import { useInstall } from "./InstallProvider";
 
 type InstallButtonProps = {
   label?: string;
   variant?: "primary" | "light" | "nav";
   className?: string;
+  onNavigate?: () => void;
 };
 
 const variantClass: Record<NonNullable<InstallButtonProps["variant"]>, string> = {
@@ -15,19 +17,36 @@ const variantClass: Record<NonNullable<InstallButtonProps["variant"]>, string> =
   nav: "bg-primary text-white shadow-sm hover:bg-primary-dark",
 };
 
+const baseClass =
+  "inline-flex min-h-12 items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200";
+
 export default function InstallButton({
   label = appConfig.downloadLabel,
   variant = "primary",
   className = "",
+  onNavigate,
 }: InstallButtonProps) {
-  const { openInstall } = useInstall();
+  const { intent, openInstall } = useInstall();
+  const classes = `${baseClass} ${variantClass[variant]} ${className}`;
+
+  if (intent.kind === "download" || intent.kind === "playstore") {
+    const sameOriginApk = intent.kind === "download" && isSameOriginApk(intent.url);
+
+    return (
+      <a
+        href={intent.url}
+        rel="noopener"
+        className={classes}
+        download={sameOriginApk ? "sainik-mart.apk" : undefined}
+        onClick={onNavigate}
+      >
+        {label}
+      </a>
+    );
+  }
 
   return (
-    <button
-      type="button"
-      onClick={openInstall}
-      className={`inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 ${variantClass[variant]} ${className}`}
-    >
+    <button type="button" onClick={openInstall} className={classes}>
       {label}
     </button>
   );

@@ -7,7 +7,7 @@ const tiles = [
 
 export default function PhoneMock() {
   return (
-    <div className="relative mx-auto w-[250px] sm:w-[280px]">
+    <div className="relative mx-auto w-[200px] sm:w-[250px] lg:w-[280px]">
       <div
         aria-hidden="true"
         className="absolute -left-10 top-10 hidden h-16 w-16 rounded-full bg-[#f2d48a] shadow-md lg:block"
